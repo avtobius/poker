@@ -506,6 +506,42 @@ body.ingame #langBar{display:none}
 #langSel{padding:5px 8px;font-size:13px;border-radius:8px;background:#0a1418;cursor:pointer;font-weight:700}
 .felt::after{content:attr(data-logo)}
 .combo.mine .name::after{content:attr(data-mine)}
+
+/* ---------- Экран победы ---------- */
+#victory{position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;padding:16px;
+  background:radial-gradient(ellipse at 50% 40%,rgba(70,52,8,.55),rgba(0,0,0,.88) 70%);animation:fadeIn .6s ease backwards}
+#confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.vbox{position:relative;width:min(470px,100%);max-height:calc(100vh - 32px);overflow:auto;text-align:center;
+  background:linear-gradient(#1f2c22,#0c1512);border:2px solid var(--accent);border-radius:22px;padding:24px 22px 20px;
+  box-shadow:0 0 70px rgba(242,185,59,.35),inset 0 1px 0 rgba(255,255,255,.08),0 30px 80px rgba(0,0,0,.7);
+  animation:vboxIn .8s cubic-bezier(.2,1.4,.4,1) .15s backwards}
+@keyframes vboxIn{from{opacity:0;transform:scale(.55) translateY(50px)}}
+.trophy{font-size:86px;line-height:1;display:inline-block;filter:drop-shadow(0 0 26px rgba(242,185,59,.85));
+  animation:trophyIn 1s cubic-bezier(.2,1.6,.4,1) .45s backwards,trophyFloat 3s ease-in-out 1.5s infinite}
+@keyframes trophyIn{from{transform:scale(0) rotate(-40deg);opacity:0}}
+@keyframes trophyFloat{50%{transform:translateY(-9px) rotate(4deg)}}
+.vtitle{font-size:44px;font-weight:900;letter-spacing:3px;margin:6px 0 4px;line-height:1.1;
+  background:linear-gradient(#fff6d2,#f2b93b 55%,#b47c18);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 3px 10px rgba(0,0,0,.6));animation:pop .6s cubic-bezier(.3,1.5,.5,1) .8s backwards}
+.vchamp{display:flex;align-items:center;justify-content:center;gap:14px;margin:12px 0 16px;animation:pop .5s ease 1s backwards}
+.ava.vava{--ava:68px;font-size:24px;box-shadow:0 0 0 3px var(--accent),0 0 28px rgba(242,185,59,.75)}
+.vname{font-size:22px;font-weight:800;text-align:left}
+.vsub{color:var(--muted);font-size:12px;text-align:left}
+.vchips{color:var(--accent);font-weight:800;text-align:left;font-size:16px}
+.vplaces{text-align:left;background:rgba(0,0,0,.28);border-radius:12px;padding:6px;margin-bottom:12px}
+.vplace{display:grid;grid-template-columns:32px 30px 1fr auto;gap:9px;align-items:center;padding:6px 8px;border-radius:8px;animation:slideIn .45s ease backwards}
+.vplace+.vplace{margin-top:2px}
+.vplace .med{font-size:21px;text-align:center;color:var(--muted);font-weight:800}
+.vplace .ava{--ava:28px;font-size:11px}
+.vplace .vn{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vplace .r{color:var(--muted);font-size:12px;white-space:nowrap}
+.vplace.first{background:rgba(242,185,59,.13)}
+.vplace.first .r{color:var(--accent);font-weight:700}
+.vstats{font-size:13px;color:#c9d6db;line-height:1.75;margin-bottom:16px;animation:fadeIn .5s ease 1.6s backwards}
+.vstats b{color:#fff}
+.vbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;animation:fadeIn .5s ease 1.8s backwards}
+.vbtns button{padding:11px 20px}
+.vwait{color:var(--muted);font-size:13px;width:100%;margin-top:4px}
 </style>
 </head>
 <body>
@@ -624,6 +660,7 @@ body.ingame #langBar{display:none}
     </div>
   </div>
 </div>
+<div id="victory" class="hidden"><canvas id="confetti"></canvas><div class="vbox" id="vbox"></div></div>
 <div id="overlay" class="hidden">
   <div class="box" style="text-align:center">
     <h2 id="ovTitle" style="margin-top:0"></h2>
@@ -732,6 +769,8 @@ class PokerTable {
     this.log = []; this.chat = [];
     this.turnDeadline = 0; this.nextAt = 0;
     this.timers = { turn: null, next: null, run: null, auto: null };
+    this.busts = [];                                  // кто и на какой раздаче вылетел — для таблицы мест
+    this.stats = { bigPot: null, best: null };        // статистика для экрана победы
   }
 
   /* ---- служебное ---- */
@@ -817,6 +856,7 @@ class PokerTable {
     if (p.stack > 0) return 'haveChips';
     if (this.inPlay && p.inHand && !p.folded) return 'waitHandEnd';
     p.stack = this.settings.startStack; p.rebuys++;
+    this.busts = this.busts.filter(b => b.name !== p.name);
     this.addLog('rebuy', { name: p.name, n: p.stack });
     this.maybeResume(); this.changed(); return null;
   }
@@ -841,7 +881,7 @@ class PokerTable {
     this.changed();
   }
   maybeResume() {
-    if (this.phase !== 'waiting') return;
+    if (this.phase !== 'waiting' && this.phase !== 'gameover') return;
     if (this.players.filter(p => this.eligible(p)).length < 2) return;
     this.clearTimer('next');
     this.nextAt = Date.now() + 2000;
@@ -849,6 +889,24 @@ class PokerTable {
   }
 
   /* ---- ход раздачи ---- */
+  // Таблица мест: чемпион, потом вылетевшие — кто позже (и с большим стеком) вылетел, тот выше
+  places() {
+    const res = [], seen = new Set();
+    for (const p of this.players.filter(q => q.stack > 0).sort((a, b) => b.stack - a.stack)) { res.push({ name: p.name, stack: p.stack }); seen.add(p.name); }
+    const busts = this.busts.slice().sort((a, b) => a.hand - b.hand || a.start - b.start);
+    for (let i = busts.length - 1; i >= 0; i--) { const b = busts[i]; if (seen.has(b.name)) continue; seen.add(b.name); res.push({ name: b.name, hand: b.hand }); }
+    for (const p of this.players) if (!seen.has(p.name)) res.push({ name: p.name, hand: null });
+    return res;
+  }
+  newGame() {
+    if (this.phase !== 'gameover') return 'notOver';
+    const s = this.settings;
+    for (const p of this.players) p.stack = s.startStack;
+    this.busts = []; this.stats = { bigPot: null, best: null };
+    this.handNo = 0; this.dealerIdx = -1; this.result = null;
+    this.addLog('newGame', { stack: s.startStack, sb: s.sb, bb: s.bb });
+    this.startHand(); return null;
+  }
   startGame() {
     if (this.phase !== 'lobby') return 'alreadyRunning';
     if (this.players.length < 2) return 'need2';
@@ -860,6 +918,7 @@ class PokerTable {
   startHand() {
     this.clearAllTimers();
     for (const p of this.players) {
+      p.handStart = p.stack;
       Object.assign(p, { inHand: this.eligible(p), allIn: false, bet: 0, total: 0, hole: [], acted: false, mayRaise: false, last: null, show: false, best: null, score: null });
       p.folded = !p.inHand;
     }
@@ -868,10 +927,12 @@ class PokerTable {
     this.board = []; this.toAct = -1; this.currentBet = 0;
     if (count < 2) {
       const withChips = this.players.filter(p => p.stack > 0);
-      if (this.phase !== 'waiting') {
-        if (withChips.length === 1 && !this.settings.rebuy) this.addLog('champion', { name: withChips[0].name });
-        else this.addLog('waiting');
+      // все фишки у одного игрока — конец игры, показываем экран победы
+      if (withChips.length === 1 && this.players.length >= 2 && this.handNo > 0) {
+        if (this.phase !== 'gameover') this.addLog('champion', { name: withChips[0].name });
+        this.phase = 'gameover'; this.changed(); return;
       }
+      if (this.phase !== 'waiting') this.addLog('waiting');
       this.phase = 'waiting'; this.changed(); return;
     }
     this.result = null; this.handNo++;
@@ -1023,6 +1084,7 @@ class PokerTable {
     p.stack += pot;
     this.result = { uncontested: true, winners: [{ id: p.id, name: p.name, amount: pot, hand: null }], pots: [], highlight: [] };
     this.addLog('takes', { name: p.name, n: pot });
+    if (!this.stats.bigPot || pot > this.stats.bigPot.n) this.stats.bigPot = { n: pot, name: p.name };
     this.finishHand();
   }
   showdown() {
@@ -1064,6 +1126,8 @@ class PokerTable {
     for (const [p, a] of won) p.stack += a;
     const winners = [...won].map(([p, a]) => ({ id: p.id, name: p.name, amount: a, hand: p.score }));
     for (const w of winners) this.addLog('wins', { name: w.name, n: w.amount, hand: w.hand });
+    if (!this.stats.bigPot || total > this.stats.bigPot.n) this.stats.bigPot = { n: total, name: winners.map(w => w.name).join(', ') };
+    for (const w of winners) if (!this.stats.best || cmpScore(w.hand, this.stats.best.hand) > 0) this.stats.best = { hand: w.hand, name: w.name };
     this.result = { uncontested: false, winners, pots: potInfo, highlight };
     this.finishHand();
   }
@@ -1071,7 +1135,11 @@ class PokerTable {
     this.clearAllTimers();
     this.phase = 'handover'; this.toAct = -1;
     for (const p of this.players) { p.bet = 0; p.total = 0; }
-    for (const p of this.players) if (p.inHand && p.stack === 0) this.addLog(this.settings.rebuy ? 'bustedRebuy' : 'busted', { name: p.name });
+    for (const p of this.players) if (p.inHand && p.stack === 0) {
+      this.addLog(this.settings.rebuy ? 'bustedRebuy' : 'busted', { name: p.name });
+      this.busts = this.busts.filter(b => b.name !== p.name);
+      this.busts.push({ name: p.name, hand: this.handNo, start: p.handStart || 0 });
+    }
     if (this.autoNext) {
       this.nextAt = Date.now() + this.nextDelay;
       this.timers.next = setTimeout(() => { this.timers.next = null; this.startHand(); }, this.nextDelay);
@@ -1090,6 +1158,7 @@ class PokerTable {
       log: this.log.slice(-80), chat: this.chat.slice(-80), logTotal: this.logTotal || 0, chatTotal: this.chatTotal || 0,
       turnLeft: this.turnDeadline ? Math.max(0, this.turnDeadline - Date.now()) : 0,
       nextLeft: this.nextAt ? Math.max(0, this.nextAt - Date.now()) : 0,
+      places: this.phase === 'gameover' ? this.places() : null, stats: this.stats,
       players: this.players.map(p => ({
         id: p.id, name: p.name, stack: p.stack, bet: p.bet, connected: p.connected, sitOut: p.sitOut,
         inHand: p.inHand, folded: p.folded, allIn: p.allIn, last: p.last, isHost: p.id === 'host',
@@ -1146,6 +1215,9 @@ const I18N = {
     'l.hand': 'Раздача #{n} · дилер {name}', 'l.sb': '{name} ставит малый блайнд {n}', 'l.bb': '{name} ставит большой блайнд {n}', 'l.twiceTimeout': '{name} дважды не успел — отходит от стола',
     'l.flop': 'Флоп: {cards}', 'l.turn': 'Тёрн: {cards}', 'l.river': 'Ривер: {cards}', 'l.takes': '{name} забирает банк {n}',
     'l.shows': '{name} показывает {cards} — {hand}', 'l.wins': '{name} выигрывает {n} — {hand}', 'l.busted': '{name} остался без фишек', 'l.bustedRebuy': '{name} остался без фишек — можно докупиться',
+    vYouWin: 'ПОБЕДА!', vWinner: 'Победитель', vSub: 'забирает все фишки за столом', vChips: 'фишек', vOutOnHand: 'выбыл на раздаче #{n}', vOut: 'выбыл',
+    vHands: 'Раздач сыграно: <b>{n}</b>', vBigPot: 'Самый большой банк: <b>{n}</b> — {name}', vBestHand: 'Лучшая комбинация: <b>{hand}</b> — {name}',
+    vNewGame: 'Новая игра', vWaitHost: 'Ждём, пока хост начнёт новую игру…', 'l.newGame': 'Новая игра! Стек {stack}, блайнды {sb}/{bb}', 'e.notOver': 'Игра ещё не закончилась',
     combosTitle: 'Комбинации', combosSub: 'От самой сильной к самой слабой. Побеждает тот, у кого комбинация выше.', mineTag: '  ← у тебя сейчас',
     tip1: '🃏 Комбинация собирается из <b>5 лучших карт</b>: твои 2 карты + 5 карт на столе. Можно использовать любые из них, даже только карты стола.',
     tip2: '⚖️ Если комбинации одинаковые, побеждает та, где карты <b>старше</b> (пара тузов сильнее пары королей). Если и это равно, смотрят на остальные карты — <b>кикер</b>.',
@@ -1202,6 +1274,9 @@ const I18N = {
     'l.hand': 'Hand #{n} · dealer {name}', 'l.sb': '{name} posts the small blind {n}', 'l.bb': '{name} posts the big blind {n}', 'l.twiceTimeout': '{name} timed out twice — sitting out',
     'l.flop': 'Flop: {cards}', 'l.turn': 'Turn: {cards}', 'l.river': 'River: {cards}', 'l.takes': '{name} takes the pot {n}',
     'l.shows': '{name} shows {cards} — {hand}', 'l.wins': '{name} wins {n} — {hand}', 'l.busted': '{name} is out of chips', 'l.bustedRebuy': '{name} is out of chips — rebuy available',
+    vYouWin: 'VICTORY!', vWinner: 'Winner', vSub: 'takes all the chips at the table', vChips: 'chips', vOutOnHand: 'out on hand #{n}', vOut: 'out',
+    vHands: 'Hands played: <b>{n}</b>', vBigPot: 'Biggest pot: <b>{n}</b> — {name}', vBestHand: 'Best hand: <b>{hand}</b> — {name}',
+    vNewGame: 'New game', vWaitHost: 'Waiting for the host to start a new game…', 'l.newGame': 'New game! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': "The game isn't over yet",
     combosTitle: 'Hand rankings', combosSub: 'From strongest to weakest. The higher hand wins.', mineTag: '  ← your hand now',
     tip1: '🃏 A hand is made of the <b>best 5 cards</b>: your 2 cards + the 5 cards on the table. You can use any of them, even only the table cards.',
     tip2: '⚖️ If two hands are the same type, the one with <b>higher cards</b> wins (a pair of Aces beats a pair of Kings). If that is equal too, the remaining cards decide — the <b>kicker</b>.',
@@ -1258,6 +1333,9 @@ const I18N = {
     'l.hand': 'Hand #{n} · dealer {name}', 'l.sb': '{name} zet de small blind {n}', 'l.bb': '{name} zet de big blind {n}', 'l.twiceTimeout': '{name} was twee keer te laat — even weg',
     'l.flop': 'Flop: {cards}', 'l.turn': 'Turn: {cards}', 'l.river': 'River: {cards}', 'l.takes': '{name} wint de pot {n}',
     'l.shows': '{name} laat {cards} zien — {hand}', 'l.wins': '{name} wint {n} — {hand}', 'l.busted': '{name} heeft geen fiches meer', 'l.bustedRebuy': '{name} heeft geen fiches meer — rebuy mogelijk',
+    vYouWin: 'GEWONNEN!', vWinner: 'Winnaar', vSub: 'pakt alle fiches aan tafel', vChips: 'fiches', vOutOnHand: 'uitgeschakeld in hand #{n}', vOut: 'uitgeschakeld',
+    vHands: 'Gespeelde handen: <b>{n}</b>', vBigPot: 'Grootste pot: <b>{n}</b> — {name}', vBestHand: 'Beste hand: <b>{hand}</b> — {name}',
+    vNewGame: 'Nieuw spel', vWaitHost: 'Wachten tot de host een nieuw spel start…', 'l.newGame': 'Nieuw spel! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': 'Het spel is nog niet afgelopen',
     combosTitle: 'Pokerhanden', combosSub: 'Van sterk naar zwak. De hoogste hand wint.', mineTag: '  ← jouw hand nu',
     tip1: '🃏 Een hand bestaat uit de <b>5 beste kaarten</b>: jouw 2 kaarten + de 5 kaarten op tafel. Je mag ze allemaal gebruiken, zelfs alleen de tafelkaarten.',
     tip2: '⚖️ Bij dezelfde soort hand wint de hand met <b>hogere kaarten</b> (een paar azen wint van een paar heren). Is dat ook gelijk, dan beslissen de overige kaarten — de <b>kicker</b>.',
@@ -1460,6 +1538,7 @@ function hostHandle(pid, d) {
     case 'sit': err = table.setSitOut(pid, d.v); break;
     case 'settings': if (pid === 'host') err = table.updateSettings(d.s); break;
     case 'start': if (pid === 'host') err = table.startGame(); break;
+    case 'newgame': if (pid === 'host') err = table.newGame(); break;
   }
   if (err) toastTo(pid, err);
 }
@@ -1940,6 +2019,7 @@ function renderGame(v) {
   renderActions(v, me, inPlay);
   renderFeeds(v);
   if (!$('#combos').classList.contains('hidden')) renderCombos();
+  renderVictory(v, me);
   const fitKey = v.players.map(p => p.id).join(',') + '|' + myId;
   if (fitKey !== lastFitKey) { lastFitKey = fitKey; fitTable(); setTimeout(fitTable, 700); }
 }
@@ -2295,6 +2375,92 @@ $('.combos-close').addEventListener('click', closeCombos);
 $('#combos').addEventListener('click', e => { if (e.target.id === 'combos') closeCombos(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#combos').classList.contains('hidden')) closeCombos(); });
 
+/* ---- экран победы ---- */
+let victoryKey = '', victoryShownFor = '';
+function renderVictory(v, me) {
+  const el = $('#victory');
+  if (v.phase !== 'gameover' || !v.places || !v.places.length) {
+    if (!el.classList.contains('hidden')) { el.classList.add('hidden'); stopConfetti(); }
+    victoryShownFor = '';
+    return;
+  }
+  const champ = v.places[0];
+  const iWon = me && me.name === champ.name;
+  const showFor = champ.name + '|' + v.handNo;
+  const key = [showFor, LANG, me ? me.stack : '', isHost, v.settings.rebuy, v.places.length].join('|');
+  if (el.classList.contains('hidden')) el.classList.remove('hidden');
+  if (victoryShownFor !== showFor) { victoryShownFor = showFor; startConfetti(); }
+  if (key === victoryKey) return;
+  victoryKey = key;
+  const medals = ['🥇', '🥈', '🥉'];
+  const rows = v.places.map((pl, i) => `<div class="vplace${i === 0 ? ' first' : ''}" style="animation-delay:${1.2 + i * 0.12}s">
+      <div class="med">${medals[i] || (i + 1) + '.'}</div>${avaHTML(pl.name)}<div class="vn">${esc(pl.name)}</div>
+      <div class="r">${pl.stack ? fmt(pl.stack) + ' ' + t('vChips') : (pl.hand ? t('vOutOnHand', { n: pl.hand }) : t('vOut'))}</div></div>`).join('');
+  const st = v.stats || {};
+  let stats = `<div>${t('vHands', { n: v.handNo })}</div>`;
+  if (st.bigPot) stats += `<div>${t('vBigPot', { n: st.bigPot.n, name: esc(st.bigPot.name) })}</div>`;
+  if (st.best) stats += `<div>${t('vBestHand', { hand: st.best.hand, name: esc(st.best.name) })}</div>`;
+  let btns = '';
+  if (isHost) btns += `<button class="primary" data-v="new">${t('vNewGame')}</button>`;
+  if (me && me.stack === 0 && v.settings.rebuy) btns += `<button data-v="rebuy">${t('rebuyBtn', { n: v.settings.startStack })}</button>`;
+  btns += `<button class="ghost" data-v="leave">${t('toMenu')}</button>`;
+  if (!isHost) btns += `<div class="vwait">${t('vWaitHost')}</div>`;
+  $('#vbox').innerHTML = `
+    <div class="trophy">🏆</div>
+    <div class="vtitle">${iWon ? t('vYouWin') : t('vWinner')}</div>
+    <div class="vchamp">${avaHTML(champ.name, 'vava')}<div><div class="vname">${esc(champ.name)}</div><div class="vsub">${t('vSub')}</div><div class="vchips">${fmt(champ.stack || 0)} ${t('vChips')}</div></div></div>
+    <div class="vplaces">${rows}</div>
+    <div class="vstats">${stats}</div>
+    <div class="vbtns">${btns}</div>`;
+  $('#vbox').querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => {
+    const a = b.dataset.v;
+    if (a === 'new') send({ t: 'newgame' });
+    else if (a === 'rebuy') send({ t: 'rebuy' });
+    else { try { if (peer) peer.destroy(); } catch (e) {} location.reload(); }
+  }));
+}
+
+// Конфетти: сначала залп, потом тихий «снегопад», пока открыт экран победы
+let confettiRAF = 0, confettiParts = [], confettiStart = 0;
+function startConfetti() {
+  if (reduceMotion) return;
+  const cv = $('#confetti'), g = cv.getContext('2d');
+  const colors = ['#f2b93b', '#ffe08a', '#e8295f', '#2f93dc', '#54e08a', '#ffffff', '#c26df0'];
+  const resize = () => { cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; };
+  resize();
+  const spawn = (burst) => {
+    const W = cv.width, H = cv.height, d = devicePixelRatio;
+    const p = { c: colors[randInt(colors.length)], w: (6 + Math.random() * 7) * d, h: (9 + Math.random() * 9) * d, r: Math.random() * 6.28, vr: (Math.random() - .5) * .3 };
+    if (burst) { // залп из двух нижних углов
+      const left = Math.random() < .5;
+      Object.assign(p, { x: left ? 0 : W, y: H * .85, vx: (left ? 1 : -1) * (6 + Math.random() * 12) * d, vy: -(14 + Math.random() * 14) * d });
+    } else Object.assign(p, { x: Math.random() * W, y: -20 * d, vx: (Math.random() - .5) * 2 * d, vy: (1 + Math.random() * 2) * d });
+    confettiParts.push(p);
+  };
+  confettiParts = []; for (let i = 0; i < 220; i++) spawn(true);
+  confettiStart = performance.now();
+  cancelAnimationFrame(confettiRAF);
+  const step = (now) => {
+    if (cv.width !== innerWidth * devicePixelRatio) resize();
+    g.clearRect(0, 0, cv.width, cv.height);
+    if (now - confettiStart > 1500 && confettiParts.length < 160 && Math.random() < .6) spawn(false);
+    const d = devicePixelRatio;
+    confettiParts = confettiParts.filter(p => p.y < cv.height + 40 * d);
+    for (const p of confettiParts) {
+      p.vy += .35 * d; p.vx *= .985; p.vy = Math.min(p.vy, 5 * d);
+      p.x += p.vx + Math.sin((now / 300) + p.r) * .6 * d; p.y += p.vy; p.r += p.vr;
+      g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.scale(1, Math.abs(Math.cos(now / 200 + p.r)) * .8 + .2);
+      g.fillStyle = p.c; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore();
+    }
+    confettiRAF = requestAnimationFrame(step);
+  };
+  confettiRAF = requestAnimationFrame(step);
+}
+function stopConfetti() {
+  cancelAnimationFrame(confettiRAF); confettiRAF = 0; confettiParts = [];
+  const cv = $('#confetti'); cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+}
+
 /* ---- события ---- */
 $('#nameIn').value = lsGet('poker_name');
 updateMenuAva();
@@ -2317,7 +2483,7 @@ function applyLang(lang) {
   // всё, что рисуется из кода, перерисовываем на новом языке
   $('#lobbySettings').dataset.built = '';
   $('#pot').dataset.built = '';
-  actionsKey = '';
+  actionsKey = ''; victoryKey = '';
   $('#menuStatus').textContent = '';
   if (!$('#combos').classList.contains('hidden')) renderCombos();
   if (view) render(view);
