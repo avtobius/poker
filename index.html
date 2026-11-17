@@ -639,12 +639,17 @@ body.ingame #langBar{display:none}
    подключается (строгий NAT, мобильный интернет) — впиши сюда данные
    TURN-сервера, например из бесплатного аккаунта ExpressTURN.
    ===================================================================== */
-const TURN = { urls: '', username: '', credential: '' };   // напр. urls: 'turn:relay1.expressturn.com:3478'
+// TURN-сервер ExpressTURN (бесплатный аккаунт): UDP и запасной вариант через TCP
+const TURN = {
+  urls: ['turn:free.expressturn.com:3478', 'turn:free.expressturn.com:3478?transport=tcp'],
+  username: '000000002107680168',
+  credential: 'awMR8kLni53za34v+59BcGGGkzc=',
+};
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
 ];
-if (TURN.urls) ICE_SERVERS.push({ urls: TURN.urls, username: TURN.username, credential: TURN.credential });
+if (TURN.urls && TURN.urls.length) ICE_SERVERS.push({ urls: TURN.urls, username: TURN.username, credential: TURN.credential });
 const PEER_PREFIX = 'poker-druzya-';
 
 /*ENGINE-START*/
