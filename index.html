@@ -542,6 +542,36 @@ body.ingame #langBar{display:none}
 .vbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;animation:fadeIn .5s ease 1.8s backwards}
 .vbtns button{padding:11px 20px}
 .vwait{color:var(--muted);font-size:13px;width:100%;margin-top:4px}
+
+/* ---------- График фишек ---------- */
+.vbox{width:min(540px,100%)}
+.vplace .vn{display:flex;align-items:center;gap:7px}
+.sw{display:inline-block;width:12px;height:3px;border-radius:2px;flex:none}
+.vchart{text-align:left;margin:0 0 12px;background:rgba(0,0,0,.28);border-radius:12px;padding:10px 10px 4px;animation:fadeIn .5s ease 1.4s backwards}
+.vchart-t{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 2px 4px}
+.vchart-w{position:relative}
+.vchart svg{display:block;width:100%;height:auto;overflow:visible}
+.vchart .gl{stroke:rgba(255,255,255,.07);stroke-width:1}
+.vchart .gl.base{stroke:rgba(255,255,255,.22)}
+.vchart .yl{fill:#7f948d;font-size:10px;text-anchor:end;dominant-baseline:middle}
+.vchart .xl{fill:#7f948d;font-size:10px;text-anchor:middle}
+.vchart .el{fill:#e9f0ea;font-size:11px;font-weight:700;text-anchor:end}
+.vchart .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:lineDraw 1.4s ease-out forwards}
+.vchart .ln.champ{stroke-width:3}
+@keyframes lineDraw{to{stroke-dashoffset:0}}
+.vchart .cx{stroke:rgba(255,255,255,.35);stroke-width:1;stroke-dasharray:3 3}
+.vchart .dot{stroke:#0c1512;stroke-width:2}
+.vtip{position:absolute;top:4px;pointer-events:none;background:rgba(8,14,12,.95);border:1px solid #2b4038;border-radius:8px;padding:6px 9px;font-size:12px;min-width:120px;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:2}
+.vtip .th{color:var(--muted);font-weight:700;margin-bottom:3px}
+.vtip .tr{display:flex;align-items:center;gap:7px;line-height:1.55}
+.vtip .tr span{flex:1;color:#dfe7e3;white-space:nowrap}
+.vtip .tr b{color:#fff}
+@media (prefers-reduced-motion: reduce){.vchart .ln{stroke-dashoffset:0;animation:none}}
+
+.vbox .trophy{font-size:64px}
+.vbox .vtitle{font-size:36px}
+.vbox .vchamp{margin:8px 0 12px}
+.vplace{padding:4px 8px}
 </style>
 </head>
 <body>
@@ -771,6 +801,7 @@ class PokerTable {
     this.timers = { turn: null, next: null, run: null, auto: null };
     this.busts = [];                                  // кто и на какой раздаче вылетел — для таблицы мест
     this.stats = { bigPot: null, best: null };        // статистика для экрана победы
+    this.history = [];                                // стеки игроков после каждой раздачи — для графика
   }
 
   /* ---- служебное ---- */
@@ -898,12 +929,18 @@ class PokerTable {
     for (const p of this.players) if (!seen.has(p.name)) res.push({ name: p.name, hand: null });
     return res;
   }
+  snapshot(hand) {
+    const s = {}; for (const p of this.players) s[p.name] = p.stack;
+    this.history.push({ h: hand, s });
+    if (this.history.length > 2000) this.history.splice(1, 1);
+  }
   newGame() {
     if (this.phase !== 'gameover') return 'notOver';
     const s = this.settings;
     for (const p of this.players) p.stack = s.startStack;
     this.busts = []; this.stats = { bigPot: null, best: null };
     this.handNo = 0; this.dealerIdx = -1; this.result = null;
+    this.history = []; this.snapshot(0);
     this.addLog('newGame', { stack: s.startStack, sb: s.sb, bb: s.bb });
     this.startHand(); return null;
   }
@@ -912,6 +949,7 @@ class PokerTable {
     if (this.players.length < 2) return 'need2';
     const s = this.settings;
     for (const p of this.players) p.stack = s.startStack;
+    this.snapshot(0);
     this.addLog('started', { stack: s.startStack, sb: s.sb, bb: s.bb });
     this.startHand(); return null;
   }
@@ -1126,7 +1164,9 @@ class PokerTable {
     for (const [p, a] of won) p.stack += a;
     const winners = [...won].map(([p, a]) => ({ id: p.id, name: p.name, amount: a, hand: p.score }));
     for (const w of winners) this.addLog('wins', { name: w.name, n: w.amount, hand: w.hand });
-    if (!this.stats.bigPot || total > this.stats.bigPot.n) this.stats.bigPot = { n: total, name: winners.map(w => w.name).join(', ') };
+    // самый большой банк — без возврата неуравненной ставки; победитель — тот, кто взял основной банк
+    const contested = potInfo.filter(x => x.kind !== 'refund').reduce((s, x) => s + x.amount, 0);
+    if (potInfo[0] && (!this.stats.bigPot || contested > this.stats.bigPot.n)) this.stats.bigPot = { n: contested, name: potInfo[0].winners.join(', ') };
     for (const w of winners) if (!this.stats.best || cmpScore(w.hand, this.stats.best.hand) > 0) this.stats.best = { hand: w.hand, name: w.name };
     this.result = { uncontested: false, winners, pots: potInfo, highlight };
     this.finishHand();
@@ -1140,6 +1180,7 @@ class PokerTable {
       this.busts = this.busts.filter(b => b.name !== p.name);
       this.busts.push({ name: p.name, hand: this.handNo, start: p.handStart || 0 });
     }
+    this.snapshot(this.handNo);
     if (this.autoNext) {
       this.nextAt = Date.now() + this.nextDelay;
       this.timers.next = setTimeout(() => { this.timers.next = null; this.startHand(); }, this.nextDelay);
@@ -1159,6 +1200,7 @@ class PokerTable {
       turnLeft: this.turnDeadline ? Math.max(0, this.turnDeadline - Date.now()) : 0,
       nextLeft: this.nextAt ? Math.max(0, this.nextAt - Date.now()) : 0,
       places: this.phase === 'gameover' ? this.places() : null, stats: this.stats,
+      history: this.phase === 'gameover' ? this.history : null,
       players: this.players.map(p => ({
         id: p.id, name: p.name, stack: p.stack, bet: p.bet, connected: p.connected, sitOut: p.sitOut,
         inHand: p.inHand, folded: p.folded, allIn: p.allIn, last: p.last, isHost: p.id === 'host',
@@ -1217,7 +1259,7 @@ const I18N = {
     'l.shows': '{name} показывает {cards} — {hand}', 'l.wins': '{name} выигрывает {n} — {hand}', 'l.busted': '{name} остался без фишек', 'l.bustedRebuy': '{name} остался без фишек — можно докупиться',
     vYouWin: 'ПОБЕДА!', vWinner: 'Победитель', vSub: 'забирает все фишки за столом', vChips: 'фишек', vOutOnHand: 'выбыл на раздаче #{n}', vOut: 'выбыл',
     vHands: 'Раздач сыграно: <b>{n}</b>', vBigPot: 'Самый большой банк: <b>{n}</b> — {name}', vBestHand: 'Лучшая комбинация: <b>{hand}</b> — {name}',
-    vNewGame: 'Новая игра', vWaitHost: 'Ждём, пока хост начнёт новую игру…', 'l.newGame': 'Новая игра! Стек {stack}, блайнды {sb}/{bb}', 'e.notOver': 'Игра ещё не закончилась',
+    vChart: 'Фишки по ходу игры', vTipHand: 'Раздача #{n}', vTipStart: 'Старт', vNewGame: 'Новая игра', vWaitHost: 'Ждём, пока хост начнёт новую игру…', 'l.newGame': 'Новая игра! Стек {stack}, блайнды {sb}/{bb}', 'e.notOver': 'Игра ещё не закончилась',
     combosTitle: 'Комбинации', combosSub: 'От самой сильной к самой слабой. Побеждает тот, у кого комбинация выше.', mineTag: '  ← у тебя сейчас',
     tip1: '🃏 Комбинация собирается из <b>5 лучших карт</b>: твои 2 карты + 5 карт на столе. Можно использовать любые из них, даже только карты стола.',
     tip2: '⚖️ Если комбинации одинаковые, побеждает та, где карты <b>старше</b> (пара тузов сильнее пары королей). Если и это равно, смотрят на остальные карты — <b>кикер</b>.',
@@ -1276,7 +1318,7 @@ const I18N = {
     'l.shows': '{name} shows {cards} — {hand}', 'l.wins': '{name} wins {n} — {hand}', 'l.busted': '{name} is out of chips', 'l.bustedRebuy': '{name} is out of chips — rebuy available',
     vYouWin: 'VICTORY!', vWinner: 'Winner', vSub: 'takes all the chips at the table', vChips: 'chips', vOutOnHand: 'out on hand #{n}', vOut: 'out',
     vHands: 'Hands played: <b>{n}</b>', vBigPot: 'Biggest pot: <b>{n}</b> — {name}', vBestHand: 'Best hand: <b>{hand}</b> — {name}',
-    vNewGame: 'New game', vWaitHost: 'Waiting for the host to start a new game…', 'l.newGame': 'New game! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': "The game isn't over yet",
+    vChart: 'Chips over the game', vTipHand: 'Hand #{n}', vTipStart: 'Start', vNewGame: 'New game', vWaitHost: 'Waiting for the host to start a new game…', 'l.newGame': 'New game! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': "The game isn't over yet",
     combosTitle: 'Hand rankings', combosSub: 'From strongest to weakest. The higher hand wins.', mineTag: '  ← your hand now',
     tip1: '🃏 A hand is made of the <b>best 5 cards</b>: your 2 cards + the 5 cards on the table. You can use any of them, even only the table cards.',
     tip2: '⚖️ If two hands are the same type, the one with <b>higher cards</b> wins (a pair of Aces beats a pair of Kings). If that is equal too, the remaining cards decide — the <b>kicker</b>.',
@@ -1335,7 +1377,7 @@ const I18N = {
     'l.shows': '{name} laat {cards} zien — {hand}', 'l.wins': '{name} wint {n} — {hand}', 'l.busted': '{name} heeft geen fiches meer', 'l.bustedRebuy': '{name} heeft geen fiches meer — rebuy mogelijk',
     vYouWin: 'GEWONNEN!', vWinner: 'Winnaar', vSub: 'pakt alle fiches aan tafel', vChips: 'fiches', vOutOnHand: 'uitgeschakeld in hand #{n}', vOut: 'uitgeschakeld',
     vHands: 'Gespeelde handen: <b>{n}</b>', vBigPot: 'Grootste pot: <b>{n}</b> — {name}', vBestHand: 'Beste hand: <b>{hand}</b> — {name}',
-    vNewGame: 'Nieuw spel', vWaitHost: 'Wachten tot de host een nieuw spel start…', 'l.newGame': 'Nieuw spel! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': 'Het spel is nog niet afgelopen',
+    vChart: 'Fiches tijdens het spel', vTipHand: 'Hand #{n}', vTipStart: 'Start', vNewGame: 'Nieuw spel', vWaitHost: 'Wachten tot de host een nieuw spel start…', 'l.newGame': 'Nieuw spel! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': 'Het spel is nog niet afgelopen',
     combosTitle: 'Pokerhanden', combosSub: 'Van sterk naar zwak. De hoogste hand wint.', mineTag: '  ← jouw hand nu',
     tip1: '🃏 Een hand bestaat uit de <b>5 beste kaarten</b>: jouw 2 kaarten + de 5 kaarten op tafel. Je mag ze allemaal gebruiken, zelfs alleen de tafelkaarten.',
     tip2: '⚖️ Bij dezelfde soort hand wint de hand met <b>hogere kaarten</b> (een paar azen wint van een paar heren). Is dat ook gelijk, dan beslissen de overige kaarten — de <b>kicker</b>.',
@@ -2375,6 +2417,103 @@ $('.combos-close').addEventListener('click', closeCombos);
 $('#combos').addEventListener('click', e => { if (e.target.id === 'combos') closeCombos(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#combos').classList.contains('hidden')) closeCombos(); });
 
+/* ---- график фишек на экране победы ---- */
+// Цвета — проверенная палитра для тёмного фона, по местам за столом (цвет закреплён за игроком)
+const SERIES = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#0ca30c', '#9085e9', '#e66767'];
+function seriesColor(v, name) {
+  const i = v.players.findIndex(p => p.name === name);
+  return i >= 0 && i < SERIES.length ? SERIES[i] : '#8f9a96';
+}
+const CH = { W: 460, H: 190, L: 46, R: 14, T: 12, B: 24 };
+function chartGeom(v) {
+  const hist = v.history || [];
+  const names = v.players.map(p => p.name);
+  let max = 0;
+  for (const s of hist) for (const n of names) if (s.s[n] > max) max = s.s[n];
+  // «круглый» шаг шкалы: 1, 2, 2.5 или 5 × 10ⁿ, не больше 5 делений
+  const raw = Math.max(1, max) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw);
+  const top = Math.max(step, Math.ceil(max / step) * step);
+  const n = Math.max(1, hist.length - 1);
+  const x = i => CH.L + (CH.W - CH.L - CH.R) * i / n;
+  const y = val => CH.T + (CH.H - CH.T - CH.B) * (1 - val / top);
+  return { hist, names, top, step, x, y, n };
+}
+function chartHTML(v) {
+  const g = chartGeom(v);
+  if (g.hist.length < 2) return '';
+  const { hist, names, top, step, x, y } = g;
+  // сетка и подписи оси Y (4 линии), подписи X — несколько номеров раздач
+  let grid = '';
+  for (let k = 0; k * step <= top + 1e-9; k++) {
+    const val = k * step, yy = y(val).toFixed(1);
+    grid += `<line x1="${CH.L}" x2="${CH.W - CH.R}" y1="${yy}" y2="${yy}" class="gl${k === 0 ? ' base' : ''}"/>`;
+    grid += `<text x="${CH.L - 6}" y="${yy}" class="yl">${val >= 1000 ? (val / 1000).toLocaleString('en-US', { maximumFractionDigits: 2 }) + 'k' : Math.round(val)}</text>`;
+  }
+  const ticks = Math.min(6, hist.length);
+  let xl = '';
+  for (let k = 0; k < ticks; k++) {
+    const i = Math.round((hist.length - 1) * k / Math.max(1, ticks - 1));
+    xl += `<text x="${x(i).toFixed(1)}" y="${CH.H - 6}" class="xl">${hist[i].h === 0 ? t('vTipStart') : '#' + hist[i].h}</text>`;
+  }
+  // линии: сначала остальные, чемпион — поверх
+  const champ = v.places && v.places[0] ? v.places[0].name : '';
+  const order = names.filter(nm => nm !== champ).concat(names.includes(champ) ? [champ] : []);
+  let lines = '';
+  order.forEach((nm, li) => {
+    let d = '', started = false;
+    hist.forEach((s, i) => {
+      const val = s.s[nm];
+      if (val === undefined) { started = false; return; }
+      d += (started ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(val).toFixed(1) + ' ';
+      started = true;
+    });
+    if (!d) return;
+    lines += `<path d="${d}" pathLength="1" class="ln${nm === champ ? ' champ' : ''}" style="stroke:${seriesColor(v, nm)};animation-delay:${1.5 + li * 0.08}s"/>`;
+  });
+  // подпись у конца линии чемпиона
+  let endLbl = '';
+  const last = hist[hist.length - 1];
+  if (champ && last.s[champ] !== undefined) {
+    endLbl = `<text x="${(x(hist.length - 1) - 4).toFixed(1)}" y="${(y(last.s[champ]) - 8).toFixed(1)}" class="el">${esc(champ)}</text>`;
+  }
+  return `<div class="vchart">
+    <div class="vchart-t">${t('vChart')}</div>
+    <div class="vchart-w" id="vchartW">
+      <svg viewBox="0 0 ${CH.W} ${CH.H}" id="vchartSvg" role="img" aria-label="${t('vChart')}">
+        ${grid}${xl}${lines}${endLbl}
+        <line id="vcx" class="cx" x1="0" x2="0" y1="${CH.T}" y2="${CH.H - CH.B}" style="display:none"/>
+        <g id="vcdots"></g>
+        <rect x="${CH.L}" y="0" width="${CH.W - CH.L - CH.R}" height="${CH.H}" fill="transparent" id="vchit"/>
+      </svg>
+      <div class="vtip hidden" id="vtip"></div>
+    </div></div>`;
+}
+// Наведение: вертикальная линия, точки на линиях и подсказка со стеками на этой раздаче
+function bindChart(v) {
+  const hit = document.getElementById('vchit'); if (!hit) return;
+  const g = chartGeom(v), svg = $('#vchartSvg'), wrap = $('#vchartW'), tip = $('#vtip');
+  const cx = $('#vcx'), dots = $('#vcdots');
+  const move = e => {
+    const r = svg.getBoundingClientRect();
+    const sx = (e.clientX - r.left) / r.width * CH.W;
+    const i = Math.max(0, Math.min(g.hist.length - 1, Math.round((sx - CH.L) / (CH.W - CH.L - CH.R) * g.n)));
+    const s = g.hist[i], xx = g.x(i);
+    cx.setAttribute('x1', xx); cx.setAttribute('x2', xx); cx.style.display = '';
+    const vals = g.names.filter(nm => s.s[nm] !== undefined).map(nm => ({ nm, val: s.s[nm] })).sort((a, b) => b.val - a.val);
+    dots.innerHTML = vals.map(o => `<circle cx="${xx}" cy="${g.y(o.val)}" r="4" style="fill:${seriesColor(v, o.nm)}" class="dot"/>`).join('');
+    tip.innerHTML = `<div class="th">${s.h === 0 ? t('vTipStart') : t('vTipHand', { n: s.h })}</div>` +
+      vals.map(o => `<div class="tr"><i class="sw" style="background:${seriesColor(v, o.nm)}"></i><span>${esc(o.nm)}</span><b>${fmt(o.val)}</b></div>`).join('');
+    tip.classList.remove('hidden');
+    const px = xx / CH.W * r.width, wr = wrap.clientWidth, tw = tip.offsetWidth;
+    tip.style.left = Math.min(wr - tw - 4, Math.max(4, px + (px > wr / 2 ? -tw - 12 : 12))) + 'px';
+  };
+  const leave = () => { cx.style.display = 'none'; dots.innerHTML = ''; tip.classList.add('hidden'); };
+  hit.addEventListener('pointermove', move);
+  hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', leave);
+}
+
 /* ---- экран победы ---- */
 let victoryKey = '', victoryShownFor = '';
 function renderVictory(v, me) {
@@ -2394,7 +2533,7 @@ function renderVictory(v, me) {
   victoryKey = key;
   const medals = ['🥇', '🥈', '🥉'];
   const rows = v.places.map((pl, i) => `<div class="vplace${i === 0 ? ' first' : ''}" style="animation-delay:${1.2 + i * 0.12}s">
-      <div class="med">${medals[i] || (i + 1) + '.'}</div>${avaHTML(pl.name)}<div class="vn">${esc(pl.name)}</div>
+      <div class="med">${medals[i] || (i + 1) + '.'}</div>${avaHTML(pl.name)}<div class="vn"><i class="sw" style="background:${seriesColor(v, pl.name)}"></i>${esc(pl.name)}</div>
       <div class="r">${pl.stack ? fmt(pl.stack) + ' ' + t('vChips') : (pl.hand ? t('vOutOnHand', { n: pl.hand }) : t('vOut'))}</div></div>`).join('');
   const st = v.stats || {};
   let stats = `<div>${t('vHands', { n: v.handNo })}</div>`;
@@ -2410,8 +2549,10 @@ function renderVictory(v, me) {
     <div class="vtitle">${iWon ? t('vYouWin') : t('vWinner')}</div>
     <div class="vchamp">${avaHTML(champ.name, 'vava')}<div><div class="vname">${esc(champ.name)}</div><div class="vsub">${t('vSub')}</div><div class="vchips">${fmt(champ.stack || 0)} ${t('vChips')}</div></div></div>
     <div class="vplaces">${rows}</div>
+    ${chartHTML(v)}
     <div class="vstats">${stats}</div>
     <div class="vbtns">${btns}</div>`;
+  bindChart(v);
   $('#vbox').querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => {
     const a = b.dataset.v;
     if (a === 'new') send({ t: 'newgame' });
