@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Покер с друзьями — Техасский холдем</title>
+<title>Poker Extended</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
 :root{
@@ -572,6 +572,52 @@ body.ingame #langBar{display:none}
 .vbox .vtitle{font-size:36px}
 .vbox .vchamp{margin:8px 0 12px}
 .vplace{padding:4px 8px}
+
+/* ---------- Poker Extended: выбор игры, Омаха, блэкджек ---------- */
+.logo em{display:block;font-style:normal;font-size:.34em;letter-spacing:.6em;padding-left:.6em;color:var(--accent);margin-top:4px}
+.games{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
+.gamebtn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;background:var(--panel2);border:2px solid transparent;border-radius:12px;text-align:center;font-weight:600}
+.gamebtn .gi{font-size:28px;line-height:1}
+.gamebtn.g-omaha .gi{color:var(--red)}
+.gamebtn b{font-size:14px}
+.gamebtn small{font-size:11px;color:var(--muted);font-weight:500;line-height:1.3}
+.gamebtn.on{border-color:var(--accent);background:rgba(242,185,59,.12)}
+.gamechip{background:var(--panel2);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:13px;line-height:1.4}
+.felt.bjmode::after{top:70%}
+.seat .hole.n3 .fan{margin:0 -11%}
+.seat .hole.n4 .fan{margin:0 -15%}
+.seat .hole.n5 .fan,.seat .hole.n6 .fan{margin:0 -19%}
+.seat .hole.n4 .card,.seat .hole.n5 .card,.seat .hole.n6 .card{--cw:4.2cqw}
+.seat.me .hole.n4 .card{--cw:6.3cqw}
+.seat.me .hole.n5 .card,.seat.me .hole.n6 .card{--cw:5.6cqw}
+.bjt{position:absolute;top:-1.4cqw;right:-.4cqw;z-index:6;background:#0b1418;border:1px solid #3a5866;color:#fff;font-weight:800;font-size:max(11px,1.25cqw);
+  padding:.1cqw .75cqw;border-radius:20px;box-shadow:0 2px 6px rgba(0,0,0,.6);white-space:nowrap}
+.bjt.b21{background:linear-gradient(#f6d77a,#c8921f);color:#2a1a00;border-color:#fff3c4}
+.bjt.bust{background:linear-gradient(#cf3231,#7e1514);border-color:#ff6d62}
+.seat.busted .hole .card{filter:grayscale(.6) brightness(.55)}
+#actions .bigbtns button.big.hit{background:linear-gradient(#2fae5e,#166a34);border-color:#5fd88a}
+.combo-omaha{background:rgba(242,185,59,.1);border:1px solid rgba(242,185,59,.4);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.45;margin-bottom:10px}
+.combo-omaha b{color:#fff}
+.bjrules{display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
+.bjrules div{background:rgba(255,255,255,.035);border-radius:10px;padding:10px 12px}
+.bjrules b{color:#fff}
+
+/* веер из 3+ карт: нахлёст считается от размера карты, чтобы индексы всех карт были видны */
+.seat .hole.n3 .fan{margin:0 -1.45cqw}
+.seat .hole.n4 .fan,.seat .hole.n5 .fan,.seat .hole.n6 .fan{margin:0 -1.15cqw}
+.seat.me .hole.n3 .fan{margin:0 -2.1cqw}
+.seat.me .hole.n4 .fan{margin:0 -1.6cqw}
+.seat.me .hole.n5 .fan,.seat.me .hole.n6 .fan{margin:0 -1.45cqw}
+.seat.me .bjt{right:auto;left:-.6cqw}
+
+/* панель блэкджека: полоска с очками, риском перебора и банком */
+.sizer.bjinfo{justify-content:space-between;gap:6px;padding:7px 10px}
+.bji{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.1}
+.bji+.bji{border-left:1px solid #26333a}
+.bji span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;white-space:nowrap}
+.bji b{font-size:19px;color:#fff}
+.bji b small{font-size:11px;color:var(--muted);font-weight:600}
+.risk.lo{color:#54e08a!important}.risk.mid{color:#f2b93b!important}.risk.hi{color:#ff6b5b!important}
 </style>
 </head>
 <body>
@@ -581,7 +627,7 @@ body.ingame #langBar{display:none}
 <div id="menu" class="screen center-screen">
   <div class="suits" id="suits"></div>
   <div class="box">
-    <h1 class="logo" data-i18n-html="logo">ПОК<span>♥</span>Р</h1>
+    <h1 class="logo" data-i18n-html="logo">POK<span>♥</span>R<em>EXTENDED</em></h1>
     <p class="sub" data-i18n="sub">Техасский холдем с друзьями</p>
     <div class="field">
       <label for="nameIn" data-i18n="nameLbl">Твоё имя</label>
@@ -628,7 +674,7 @@ body.ingame #langBar{display:none}
 <!-- ===== Игра ===== -->
 <div id="game" class="hidden">
   <div class="topbar">
-    <div><span data-i18n="tableLbl">Стол</span> <b id="tCode"></b></div>
+    <div><span data-i18n="tableLbl">Стол</span> <b id="tCode"></b> · <b id="tGame"></b></div>
     <div class="infop" id="infop"></div>
     <div class="grow"></div>
     <select id="langSel" aria-label="Language"><option value="ru">RU</option><option value="en">EN</option><option value="nl">NL</option></select>
@@ -681,6 +727,7 @@ body.ingame #langBar{display:none}
     <button class="ghost combos-close" type="button" data-i18n-aria="close" aria-label="Закрыть">✕</button>
     <h2 style="margin:0 0 2px" data-i18n="combosTitle">Комбинации</h2>
     <p class="sub" style="text-align:left;margin:0 0 12px" data-i18n="combosSub">От самой сильной к самой слабой. Побеждает тот, у кого комбинация выше.</p>
+    <div id="omahaTip" class="combo-omaha hidden"></div>
     <div id="comboList"></div>
     <div class="combo-tips">
       <div data-i18n-html="tip1">🃏 Комбинация собирается из <b>5 лучших карт</b>: твои 2 карты + 5 карт на столе. Можно использовать любые из них, даже только карты стола.</div>
@@ -783,15 +830,40 @@ function bestHand(cards) {
           }
   return { score: best, cards: bestCards };
 }
+// Омаха: комбинация строго из 2 карт руки и 3 карт стола
+function bestOmaha(hole, board) {
+  if (!hole || hole.length < 2 || board.length < 3) return null;
+  let best = null, bestCards = null;
+  for (let a = 0; a < hole.length; a++)
+    for (let b = a + 1; b < hole.length; b++)
+      for (let c = 0; c < board.length; c++)
+        for (let d = c + 1; d < board.length; d++)
+          for (let e = d + 1; e < board.length; e++) {
+            const five = [hole[a], hole[b], board[c], board[d], board[e]];
+            const s = eval5(five);
+            if (!best || cmpScore(s, best) > 0) { best = s; bestCards = five; }
+          }
+  return { score: best, cards: bestCards };
+}
+function evalHand(game, hole, board) { return game === 'omaha' ? bestOmaha(hole, board) : bestHand(hole.concat(board)); }
+// Блэкджек: 2–10 по номиналу, картинки — 10, туз — 11 или 1
+function bjValue(c) { const r = rankVal(c); return r === 14 ? 11 : Math.min(10, r); }
+function bjTotal(cards) {
+  let t = 0, aces = 0;
+  for (const c of cards) { if (!c) continue; t += bjValue(c); if (c[0] === 'A') aces++; }
+  while (t > 21 && aces) { t -= 10; aces--; }
+  return { total: t, soft: aces > 0 };
+}
 class PokerTable {
   constructor(opts = {}) {
-    this.settings = { startStack: 1000, sb: 10, bb: 20, turnTime: 30, rebuy: true };
+    // game: holdem | omaha | bj (блэкджек, все против всех)
+    this.settings = { game: 'holdem', startStack: 1000, sb: 10, bb: 20, ante: 50, turnTime: 30, rebuy: true };
     this.nextDelay = opts.nextDelay ?? 6000;      // пауза между раздачами
     this.runoutDelay = opts.runoutDelay ?? 1300;  // пауза между улицами при олл-ине
     this.autoNext = opts.autoNext ?? true;
     this.onChange = opts.onChange || (() => {});
     this.players = [];
-    this.phase = 'lobby';   // lobby | preflop | flop | turn | river | handover | waiting
+    this.phase = 'lobby';   // lobby | preflop | flop | turn | river | bj | handover | waiting | gameover
     this.board = []; this.deck = [];
     this.dealerIdx = -1; this.sbIdx = -1; this.bbIdx = -1;
     this.toAct = -1; this.currentBet = 0; this.minRaise = 0;
@@ -805,7 +877,7 @@ class PokerTable {
   }
 
   /* ---- служебное ---- */
-  get inPlay() { return ['preflop', 'flop', 'turn', 'river'].includes(this.phase); }
+  get inPlay() { return ['preflop', 'flop', 'turn', 'river', 'bj'].includes(this.phase); }
   // лог хранит коды и параметры — текст собирает каждый игрок на своём языке
   addLog(k, p = {}) { this.log.push({ k, p }); this.logTotal = (this.logTotal || 0) + 1; if (this.log.length > 120) this.log.shift(); }
   changed() { this.onChange(); }
@@ -877,7 +949,9 @@ class PokerTable {
     const sb = int(s.sb, 1, 1000000, cur.sb);
     const bb = int(s.bb, sb, 2000000, Math.max(sb, cur.bb));
     const turnTime = int(s.turnTime, 0, 300, cur.turnTime);
-    this.settings = { startStack, sb, bb, turnTime, rebuy: !!s.rebuy };
+    const ante = int(s.ante, 1, 1000000, cur.ante);
+    const game = ['holdem', 'omaha', 'bj'].includes(s.game) ? s.game : cur.game;
+    this.settings = { game, startStack, sb, bb, ante, turnTime, rebuy: !!s.rebuy };
     this.changed(); return null;
   }
   rebuy(id) {
@@ -941,8 +1015,19 @@ class PokerTable {
     this.busts = []; this.stats = { bigPot: null, best: null };
     this.handNo = 0; this.dealerIdx = -1; this.result = null;
     this.history = []; this.snapshot(0);
-    this.addLog('newGame', { stack: s.startStack, sb: s.sb, bb: s.bb });
+    this.addLog(s.game === 'bj' ? 'newGameBj' : 'newGame', { stack: s.startStack, sb: s.sb, bb: s.bb, ante: s.ante });
     this.startHand(); return null;
+  }
+  // После конца игры хост может вернуть всех в лобби и выбрать другую игру
+  toLobby() {
+    if (this.phase !== 'gameover') return 'notOver';
+    this.clearAllTimers();
+    this.players = this.players.filter(p => p.connected);
+    for (const p of this.players) Object.assign(p, { stack: 0, inHand: false, folded: true, allIn: false, bet: 0, total: 0, hole: [], last: null, show: false, score: null, best: null, bj: null, sitOut: false, timeouts: 0 });
+    this.busts = []; this.stats = { bigPot: null, best: null }; this.history = [];
+    this.handNo = 0; this.dealerIdx = -1; this.result = null; this.board = []; this.toAct = -1;
+    this.phase = 'lobby';
+    this.addLog('toLobby'); this.changed(); return null;
   }
   startGame() {
     if (this.phase !== 'lobby') return 'alreadyRunning';
@@ -950,14 +1035,14 @@ class PokerTable {
     const s = this.settings;
     for (const p of this.players) p.stack = s.startStack;
     this.snapshot(0);
-    this.addLog('started', { stack: s.startStack, sb: s.sb, bb: s.bb });
+    this.addLog(s.game === 'bj' ? 'startedBj' : 'started', { stack: s.startStack, sb: s.sb, bb: s.bb, ante: s.ante, game: s.game });
     this.startHand(); return null;
   }
   startHand() {
     this.clearAllTimers();
     for (const p of this.players) {
       p.handStart = p.stack;
-      Object.assign(p, { inHand: this.eligible(p), allIn: false, bet: 0, total: 0, hole: [], acted: false, mayRaise: false, last: null, show: false, best: null, score: null });
+      Object.assign(p, { inHand: this.eligible(p), allIn: false, bet: 0, total: 0, hole: [], acted: false, mayRaise: false, last: null, show: false, best: null, score: null, bj: null });
       p.folded = !p.inHand;
     }
     const inHand = p => p.inHand;
@@ -976,6 +1061,7 @@ class PokerTable {
     this.result = null; this.handNo++;
     this.deck = shuffle(makeDeck());
     this.dealerIdx = this.nextIdx(this.dealerIdx, inHand);
+    if (this.settings.game === 'bj') { this.sbIdx = this.bbIdx = -1; this.bjStart(count); return; }
     if (count === 2) { this.sbIdx = this.dealerIdx; this.bbIdx = this.nextIdx(this.dealerIdx, inHand); }
     else { this.sbIdx = this.nextIdx(this.dealerIdx, inHand); this.bbIdx = this.nextIdx(this.sbIdx, inHand); }
     this.phase = 'preflop';
@@ -983,7 +1069,8 @@ class PokerTable {
     const { sb, bb } = this.settings;
     this.post(this.sbIdx, sb, 'SB');
     this.post(this.bbIdx, bb, 'BB');
-    for (let r = 0; r < 2; r++) {
+    const holeN = this.settings.game === 'omaha' ? 4 : 2;
+    for (let r = 0; r < holeN; r++) {
       let i = this.sbIdx;
       for (let k = 0; k < count; k++) { this.players[i].hole.push(this.deck.pop()); i = this.nextIdx(i, inHand); }
     }
@@ -1041,10 +1128,11 @@ class PokerTable {
   autoAct(idx, timedOut) {
     const p = this.players[idx];
     if (!p || this.toAct !== idx || !this.inPlay) return;
-    this.act(p.id, p.bet < this.currentBet ? 'fold' : 'check', 0, true, timedOut);
+    this.act(p.id, this.settings.game === 'bj' ? 'stand' : (p.bet < this.currentBet ? 'fold' : 'check'), 0, true, timedOut);
   }
   // ошибки возвращаются кодом ('notYourTurn') или { k, p } с параметрами
   act(id, type, amount, auto = false, timedOut = false) {
+    if (this.settings.game === 'bj') return this.bjAct(id, type, auto, timedOut);
     if (!this.inPlay) return 'cantActNow';
     const i = this.players.findIndex(p => p.id === id);
     if (i < 0) return 'notSeated';
@@ -1072,6 +1160,8 @@ class PokerTable {
       let to = Math.floor(Number(amount));
       if (!Number.isFinite(to)) return 'badAmount';
       to = Math.min(to, maxTo);
+      // пот-лимит в Омахе: поднять можно максимум на размер банка (после уравнивания)
+      if (this.settings.game === 'omaha') to = Math.min(to, this.currentBet + this.pot() + toCall);
       if (to <= this.currentBet) return { k: 'betMoreThan', p: { n: this.currentBet } };
       const minTo = this.currentBet + this.minRaise;
       if (to < minTo && to < maxTo) return { k: 'minIs', p: { n: minTo } };
@@ -1126,12 +1216,29 @@ class PokerTable {
     this.finishHand();
   }
   showdown() {
-    const live = this.live();
+    let live;
     const n = this.players.length;
-    for (const p of live) {
-      const b = bestHand(p.hole.concat(this.board));
-      p.show = true; p.score = b.score; p.best = b.cards;
-      this.addLog('shows', { name: p.name, cards: p.hole.slice(), hand: b.score });
+    if (this.settings.game === 'bj') {
+      // блэкджек: открываем все руки; перебравшие не участвуют в дележе банка
+      const inHand = this.players.filter(p => p.inHand);
+      for (const p of inHand) {
+        p.show = true;
+        p.score = p.bj === 'bust' ? null : [p.bj === 'bj' ? 102 : 101, bjTotal(p.hole).total];
+        if (p.score) this.addLog('shows', { name: p.name, cards: p.hole.slice(), hand: p.score });
+      }
+      live = inHand.filter(p => p.score);
+      if (!live.length) {
+        for (const p of inHand) p.stack += p.total;   // все перебрали — анте возвращается
+        this.result = { uncontested: false, allBust: true, winners: [], pots: [], highlight: [] };
+        this.addLog('allBust'); this.finishHand(); return;
+      }
+    } else {
+      live = this.live();
+      for (const p of live) {
+        const b = evalHand(this.settings.game, p.hole, this.board);
+        p.show = true; p.score = b.score; p.best = b.cards;
+        this.addLog('shows', { name: p.name, cards: p.hole.slice(), hand: b.score });
+      }
     }
     // основной и побочные банки
     const levels = [...new Set(live.map(p => p.total))].sort((a, b) => a - b);
@@ -1159,7 +1266,7 @@ class PokerTable {
       for (const w of ws) { const g = share + (rem > 0 ? 1 : 0); if (rem > 0) rem--; won.set(w, (won.get(w) || 0) + g); }
       const refund = pt.eligible.length === 1 && k > 0;
       potInfo.push({ amount: pt.amount, winners: ws.map(w => w.name), kind: k === 0 ? 'main' : (refund ? 'refund' : 'side') });
-      if (k === 0) highlight = [...new Set(ws.flatMap(w => w.best))];
+      if (k === 0) highlight = [...new Set(ws.flatMap(w => w.best || []))];
     });
     for (const [p, a] of won) p.stack += a;
     const winners = [...won].map(([p, a]) => ({ id: p.id, name: p.name, amount: a, hand: p.score }));
@@ -1170,6 +1277,65 @@ class PokerTable {
     for (const w of winners) if (!this.stats.best || cmpScore(w.hand, this.stats.best.hand) > 0) this.stats.best = { hand: w.hand, name: w.name };
     this.result = { uncontested: false, winners, pots: potInfo, highlight };
     this.finishHand();
+  }
+  /* ---- блэкджек: все против всех ---- */
+  bjDraw() {
+    if (!this.deck.length) {   // колода кончилась — новая, без карт, которые уже на руках
+      const used = new Set(this.players.flatMap(p => p.hole));
+      this.deck = shuffle(makeDeck().filter(c => !used.has(c)));
+    }
+    return this.deck.pop();
+  }
+  bjStart(count) {
+    const inHand = p => p.inHand;
+    this.phase = 'bj';
+    this.addLog('hand', { n: this.handNo, name: this.players[this.dealerIdx].name });
+    const ante = this.settings.ante;
+    for (const p of this.players) if (p.inHand) { this.putIn(p, ante); p.last = { a: 'ante', n: p.bet }; p.bj = 'play'; }
+    this.addLog('antes', { n: ante });
+    const first = this.nextIdx(this.dealerIdx, inHand);
+    for (let r = 0; r < 2; r++) {
+      let i = first;
+      for (let k = 0; k < count; k++) { this.players[i].hole.push(this.bjDraw()); i = this.nextIdx(i, inHand); }
+    }
+    for (const p of this.players) if (p.inHand && bjTotal(p.hole).total === 21) { p.bj = 'bj'; p.last = { a: 'bj' }; }
+    this.bjAdvance(this.dealerIdx);
+  }
+  bjAdvance(fromIdx) {
+    this.clearTimer('turn'); this.clearTimer('auto'); this.turnDeadline = 0;
+    const alive = this.players.filter(p => p.inHand && p.bj !== 'bust');
+    if (alive.length === 0) { this.toAct = -1; this.showdown(); return; }
+    if (alive.length === 1) { this.toAct = -1; this.winUncontested(alive[0]); return; }   // остальные перебрали
+    const nxt = this.nextIdx(fromIdx, p => p.inHand && p.bj === 'play');
+    if (nxt === -1) { this.toAct = -1; this.showdown(); return; }
+    this.toAct = nxt;
+    const p = this.players[nxt];
+    if (!p.connected || p.sitOut) this.scheduleAutoAct(); else this.startTurnTimer();
+    this.changed();
+  }
+  bjAct(id, type, auto, timedOut) {
+    if (this.phase !== 'bj') return 'cantActNow';
+    const i = this.players.findIndex(p => p.id === id);
+    if (i < 0) return 'notSeated';
+    if (i !== this.toAct) return 'notYourTurn';
+    const p = this.players[i];
+    if (!auto) p.timeouts = 0;
+    if (type === 'hit') {
+      p.hole.push(this.bjDraw());
+      const { total } = bjTotal(p.hole);
+      if (total > 21) { p.bj = 'bust'; p.show = true; p.last = { a: 'bust', n: total };   // перебор — карты открываются всем
+        this.addLog('act', { name: p.name, a: 'bust', n: total }); }
+      else {
+        p.last = { a: 'hit' }; this.addLog('act', { name: p.name, a: 'hit' });
+        if (total === 21) p.bj = 'stand';                     // 21 — дальше брать незачем
+        else { this.bjAdvance(i - 1); return null; }           // ход остаётся у этого игрока
+      }
+    } else if (type === 'stand') {
+      p.bj = 'stand'; p.last = { a: 'stand' }; if (timedOut) p.last.to = true;
+      this.addLog('act', { name: p.name, a: 'stand', to: !!timedOut });
+    } else return 'unknownAction';
+    this.bjAdvance(i);
+    return null;
   }
   finishHand() {
     this.clearAllTimers();
@@ -1205,7 +1371,8 @@ class PokerTable {
         id: p.id, name: p.name, stack: p.stack, bet: p.bet, connected: p.connected, sitOut: p.sitOut,
         inHand: p.inHand, folded: p.folded, allIn: p.allIn, last: p.last, isHost: p.id === 'host',
         cardCount: p.hole.length,
-        cards: (p.id === id || p.show) ? p.hole.slice() : null,
+        // в блэкджеке первая карта скрыта, остальные видны всем
+        cards: (p.id === id || p.show) ? p.hole.slice() : (this.settings.game === 'bj' && p.hole.length ? p.hole.map((c, i) => i === 0 ? null : c) : null),
         handScore: p.show && p.score ? p.score : null,
         mayRaise: p.id === id ? p.mayRaise : false,
       })),
@@ -1220,7 +1387,7 @@ class PokerTable {
    ===================================================================== */
 const I18N = {
   ru: {
-    title: 'Покер с друзьями — Техасский холдем', logo: 'ПОК<span>♥</span>Р', sub: 'Техасский холдем с друзьями',
+    title: 'Poker Extended', logo: 'POK<span>♥</span>R<em>EXTENDED</em>', sub: 'Холдем · Омаха · Блэкджек с друзьями',
     nameLbl: 'Твоё имя', namePh: 'Например, Макс', avaChoose: 'Выбрать фото', avaDel: 'Убрать фото', avaHint: 'или перетащи картинку на кружок',
     create: 'Создать стол', or: 'или', codeLbl: 'Код стола от друга', join: 'Войти',
     lobbyHint: 'Код стола — отправь его друзьям', copy: 'Скопировать код', playersLbl: 'Игроки за столом', settingsLbl: 'Настройки',
@@ -1257,6 +1424,24 @@ const I18N = {
     'l.hand': 'Раздача #{n} · дилер {name}', 'l.sb': '{name} ставит малый блайнд {n}', 'l.bb': '{name} ставит большой блайнд {n}', 'l.twiceTimeout': '{name} дважды не успел — отходит от стола',
     'l.flop': 'Флоп: {cards}', 'l.turn': 'Тёрн: {cards}', 'l.river': 'Ривер: {cards}', 'l.takes': '{name} забирает банк {n}',
     'l.shows': '{name} показывает {cards} — {hand}', 'l.wins': '{name} выигрывает {n} — {hand}', 'l.busted': '{name} остался без фишек', 'l.bustedRebuy': '{name} остался без фишек — можно докупиться',
+    gameLbl: 'Игра', gHoldem: 'Техасский холдем', gOmaha: 'Омаха', gBj: 'Блэкджек',
+    gHoldemD: '2 карты, лучшая комбинация из 7', gOmahaD: '4 карты: ровно 2 свои + 3 со стола, пот-лимит', gBjD: 'Все против всех: кто ближе к 21 — забирает банк',
+    sAnte: 'Ставка за раунд (анте)', iAnte: 'Анте', rulesBtn: '📖 Правила',
+    aHit: 'Взял', aStand: 'Хватит', aBust: 'Перебор', aBj: 'Блэкджек!', aAnte: 'Анте',
+    lHit: 'берёт карту', lStand: 'хватит', lBust: 'перебор ({n})', lBj: 'блэкджек!', lAnte: 'анте {n}',
+    hitBtn: 'Взять карту', standBtn: 'Хватит', bjYour: 'Твои очки', bjBustChance: 'Риск перебора', bjSoftTag: 'туз = 11', bjName21: 'Блэкджек',
+    'l.antes': 'Все ставят анте {n}', 'l.allBust': 'Все перебрали — анте возвращается', 'l.startedBj': 'Игра началась: блэкджек. Стек {stack}, анте {ante}',
+    'l.newGameBj': 'Новая игра в блэкджек! Стек {stack}, анте {ante}', 'l.toLobby': 'Хост вернул всех в лобби', vLobby: 'В лобби',
+    omahaTip: '🂠 <b>Омаха:</b> у каждого 4 карты, а комбинация собирается из <b>ровно 2 своих</b> и <b>ровно 3 карт стола</b>. Ставки — пот-лимит: поднять можно максимум на размер банка.',
+    bjRulesTitle: 'Блэкджек: правила', bjRulesSub: 'Все против всех — без дилера.',
+    bjRules: [
+      '🎯 Цель — набрать <b>больше очков, чем соперники</b>, но <b>не больше 21</b>. Кто ближе всех к 21 — забирает весь банк.',
+      '🃏 Карты 2–10 — по номиналу, <b>J, Q, K</b> — 10 очков, <b>туз</b> — 11 или 1 (как выгоднее).',
+      '💰 В начале раунда все кладут одинаковое <b>анте</b> в банк и получают 2 карты: первая скрыта, вторая открыта всем.',
+      '👆 В свой ход: <b>Взять карту</b> или <b>Хватит</b>. Больше 21 — <b>перебор</b>, ты выбываешь из раунда.',
+      '⭐ <b>Блэкджек</b> — туз и 10/J/Q/K с раздачи. Бьёт любые другие 21.',
+      '⚖️ Равные очки — банк делится. Если перебрали все — анте возвращается.',
+    ],
     vYouWin: 'ПОБЕДА!', vWinner: 'Победитель', vSub: 'забирает все фишки за столом', vChips: 'фишек', vOutOnHand: 'выбыл на раздаче #{n}', vOut: 'выбыл',
     vHands: 'Раздач сыграно: <b>{n}</b>', vBigPot: 'Самый большой банк: <b>{n}</b> — {name}', vBestHand: 'Лучшая комбинация: <b>{hand}</b> — {name}',
     vChart: 'Фишки по ходу игры', vTipHand: 'Раздача #{n}', vTipStart: 'Старт', vNewGame: 'Новая игра', vWaitHost: 'Ждём, пока хост начнёт новую игру…', 'l.newGame': 'Новая игра! Стек {stack}, блайнды {sb}/{bb}', 'e.notOver': 'Игра ещё не закончилась',
@@ -1279,7 +1464,7 @@ const I18N = {
     ],
   },
   en: {
-    title: "Poker with friends — Texas Hold'em", logo: 'POK<span>♥</span>R', sub: "Texas Hold'em with friends",
+    title: 'Poker Extended', logo: 'POK<span>♥</span>R<em>EXTENDED</em>', sub: "Hold'em · Omaha · Blackjack with friends",
     nameLbl: 'Your name', namePh: 'e.g. Max', avaChoose: 'Choose photo', avaDel: 'Remove photo', avaHint: 'or drop an image on the circle',
     create: 'Create table', or: 'or', codeLbl: "Table code from a friend", join: 'Join',
     lobbyHint: 'Table code — send it to your friends', copy: 'Copy code', playersLbl: 'Players at the table', settingsLbl: 'Settings',
@@ -1316,6 +1501,24 @@ const I18N = {
     'l.hand': 'Hand #{n} · dealer {name}', 'l.sb': '{name} posts the small blind {n}', 'l.bb': '{name} posts the big blind {n}', 'l.twiceTimeout': '{name} timed out twice — sitting out',
     'l.flop': 'Flop: {cards}', 'l.turn': 'Turn: {cards}', 'l.river': 'River: {cards}', 'l.takes': '{name} takes the pot {n}',
     'l.shows': '{name} shows {cards} — {hand}', 'l.wins': '{name} wins {n} — {hand}', 'l.busted': '{name} is out of chips', 'l.bustedRebuy': '{name} is out of chips — rebuy available',
+    gameLbl: 'Game', gHoldem: "Texas Hold'em", gOmaha: 'Omaha', gBj: 'Blackjack',
+    gHoldemD: '2 cards, best hand of 7', gOmahaD: '4 cards: exactly 2 of yours + 3 from the board, pot limit', gBjD: 'Everyone vs everyone: closest to 21 takes the pot',
+    sAnte: 'Ante per round', iAnte: 'Ante', rulesBtn: '📖 Rules',
+    aHit: 'Hit', aStand: 'Stand', aBust: 'Bust', aBj: 'Blackjack!', aAnte: 'Ante',
+    lHit: 'hits', lStand: 'stands', lBust: 'busts ({n})', lBj: 'blackjack!', lAnte: 'ante {n}',
+    hitBtn: 'Hit', standBtn: 'Stand', bjYour: 'Your total', bjBustChance: 'Bust chance', bjSoftTag: 'soft', bjName21: 'Blackjack',
+    'l.antes': 'Everyone antes {n}', 'l.allBust': 'Everyone busted — the antes are returned', 'l.startedBj': 'The game has started: blackjack. Stack {stack}, ante {ante}',
+    'l.newGameBj': 'New blackjack game! Stack {stack}, ante {ante}', 'l.toLobby': 'The host returned everyone to the lobby', vLobby: 'To lobby',
+    omahaTip: '🂠 <b>Omaha:</b> everyone has 4 cards, and a hand is made of <b>exactly 2 of your cards</b> and <b>exactly 3 from the board</b>. Pot limit: you can raise at most the size of the pot.',
+    bjRulesTitle: 'Blackjack: rules', bjRulesSub: 'Everyone against everyone — no dealer.',
+    bjRules: [
+      '🎯 Get <b>more points than your opponents</b> without going <b>over 21</b>. Whoever is closest to 21 takes the whole pot.',
+      '🃏 Cards 2–10 count their number, <b>J, Q, K</b> are 10, an <b>Ace</b> is 11 or 1 (whichever is better).',
+      '💰 Each round everyone puts the same <b>ante</b> in the pot and gets 2 cards: the first is hidden, the second is visible to all.',
+      '👆 On your turn: <b>Hit</b> to take a card or <b>Stand</b>. Over 21 is a <b>bust</b> — you are out of the round.',
+      '⭐ <b>Blackjack</b> is an Ace plus a 10/J/Q/K from the deal. It beats any other 21.',
+      '⚖️ Equal points split the pot. If everyone busts, the antes are returned.',
+    ],
     vYouWin: 'VICTORY!', vWinner: 'Winner', vSub: 'takes all the chips at the table', vChips: 'chips', vOutOnHand: 'out on hand #{n}', vOut: 'out',
     vHands: 'Hands played: <b>{n}</b>', vBigPot: 'Biggest pot: <b>{n}</b> — {name}', vBestHand: 'Best hand: <b>{hand}</b> — {name}',
     vChart: 'Chips over the game', vTipHand: 'Hand #{n}', vTipStart: 'Start', vNewGame: 'New game', vWaitHost: 'Waiting for the host to start a new game…', 'l.newGame': 'New game! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': "The game isn't over yet",
@@ -1338,7 +1541,7 @@ const I18N = {
     ],
   },
   nl: {
-    title: "Poker met vrienden — Texas Hold'em", logo: 'POK<span>♥</span>R', sub: "Texas Hold'em met vrienden",
+    title: 'Poker Extended', logo: 'POK<span>♥</span>R<em>EXTENDED</em>', sub: "Hold'em · Omaha · Blackjack met vrienden",
     nameLbl: 'Je naam', namePh: 'bijv. Max', avaChoose: 'Foto kiezen', avaDel: 'Foto verwijderen', avaHint: 'of sleep een afbeelding op de cirkel',
     create: 'Tafel maken', or: 'of', codeLbl: 'Tafelcode van een vriend', join: 'Meedoen',
     lobbyHint: 'Tafelcode — stuur hem naar je vrienden', copy: 'Code kopiëren', playersLbl: 'Spelers aan tafel', settingsLbl: 'Instellingen',
@@ -1375,6 +1578,24 @@ const I18N = {
     'l.hand': 'Hand #{n} · dealer {name}', 'l.sb': '{name} zet de small blind {n}', 'l.bb': '{name} zet de big blind {n}', 'l.twiceTimeout': '{name} was twee keer te laat — even weg',
     'l.flop': 'Flop: {cards}', 'l.turn': 'Turn: {cards}', 'l.river': 'River: {cards}', 'l.takes': '{name} wint de pot {n}',
     'l.shows': '{name} laat {cards} zien — {hand}', 'l.wins': '{name} wint {n} — {hand}', 'l.busted': '{name} heeft geen fiches meer', 'l.bustedRebuy': '{name} heeft geen fiches meer — rebuy mogelijk',
+    gameLbl: 'Spel', gHoldem: "Texas Hold'em", gOmaha: 'Omaha', gBj: 'Blackjack',
+    gHoldemD: '2 kaarten, beste hand uit 7', gOmahaD: '4 kaarten: precies 2 eigen + 3 van tafel, pot-limit', gBjD: 'Iedereen tegen iedereen: wie het dichtst bij 21 komt, wint de pot',
+    sAnte: 'Inzet per ronde (ante)', iAnte: 'Ante', rulesBtn: '📖 Regels',
+    aHit: 'Kaart', aStand: 'Passen', aBust: 'Dood', aBj: 'Blackjack!', aAnte: 'Ante',
+    lHit: 'neemt een kaart', lStand: 'past', lBust: 'dood ({n})', lBj: 'blackjack!', lAnte: 'ante {n}',
+    hitBtn: 'Kaart', standBtn: 'Passen', bjYour: 'Jouw punten', bjBustChance: 'Kans op dood', bjSoftTag: 'aas = 11', bjName21: 'Blackjack',
+    'l.antes': 'Iedereen zet ante {n}', 'l.allBust': 'Iedereen dood — de antes gaan terug', 'l.startedBj': 'Het spel is begonnen: blackjack. Stack {stack}, ante {ante}',
+    'l.newGameBj': 'Nieuw blackjackspel! Stack {stack}, ante {ante}', 'l.toLobby': 'De host heeft iedereen terug naar de lobby gestuurd', vLobby: 'Naar lobby',
+    omahaTip: '🂠 <b>Omaha:</b> iedereen heeft 4 kaarten en een hand bestaat uit <b>precies 2 eigen kaarten</b> en <b>precies 3 van tafel</b>. Pot-limit: je kunt maximaal de grootte van de pot verhogen.',
+    bjRulesTitle: 'Blackjack: regels', bjRulesSub: 'Iedereen tegen iedereen — zonder dealer.',
+    bjRules: [
+      '🎯 Haal <b>meer punten dan je tegenstanders</b>, maar <b>niet meer dan 21</b>. Wie het dichtst bij 21 zit, wint de hele pot.',
+      '🃏 Kaarten 2–10 tellen hun waarde, <b>J, Q, K</b> zijn 10, een <b>aas</b> is 11 of 1 (wat het beste uitkomt).',
+      '💰 Elke ronde zet iedereen dezelfde <b>ante</b> in de pot en krijgt 2 kaarten: de eerste is verborgen, de tweede ziet iedereen.',
+      '👆 Als je aan de beurt bent: <b>Kaart</b> nemen of <b>Passen</b>. Boven 21 ben je <b>dood</b> en lig je uit de ronde.',
+      '⭐ <b>Blackjack</b> is een aas plus een 10/J/Q/K bij het delen. Die wint van elke andere 21.',
+      '⚖️ Gelijke punten — de pot wordt gedeeld. Is iedereen dood, dan gaan de antes terug.',
+    ],
     vYouWin: 'GEWONNEN!', vWinner: 'Winnaar', vSub: 'pakt alle fiches aan tafel', vChips: 'fiches', vOutOnHand: 'uitgeschakeld in hand #{n}', vOut: 'uitgeschakeld',
     vHands: 'Gespeelde handen: <b>{n}</b>', vBigPot: 'Grootste pot: <b>{n}</b> — {name}', vBestHand: 'Beste hand: <b>{hand}</b> — {name}',
     vChart: 'Fiches tijdens het spel', vTipHand: 'Hand #{n}', vTipStart: 'Start', vNewGame: 'Nieuw spel', vWaitHost: 'Wachten tot de host een nieuw spel start…', 'l.newGame': 'Nieuw spel! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': 'Het spel is nog niet afgelopen',
@@ -1439,7 +1660,15 @@ const RANK_WORDS = {
     one: {2:'twee',3:'drie',4:'vier',5:'vijf',6:'zes',7:'zeven',8:'acht',9:'negen',10:'tien',11:'boer',12:'vrouw',13:'heer',14:'aas'},
   },
 };
+// Очки в блэкджеке с правильным словом: 1 очко, 2 очка, 5 очков
+function bjPoints(n) {
+  if (LANG === 'en') return n + ' points';
+  if (LANG === 'nl') return n + ' punten';
+  const m10 = n % 10, m100 = n % 100;
+  return n + ' ' + (m10 === 1 && m100 !== 11 ? 'очко' : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? 'очка' : 'очков');
+}
 function handName(s) {
+  if (s[0] >= 100) return s[0] === 102 ? t('bjName21') : bjPoints(s[1]);   // блэкджек
   const W = RANK_WORDS[LANG], c = s[0], a = s[1], b = s[2];
   if (LANG === 'en') {
     switch (c) {
@@ -1486,7 +1715,25 @@ function currentHandName(cards) {
   return handName(rs.length >= 2 && rs[0] === rs[1] ? [1, rs[0]] : [0, rs[0]]);
 }
 // Действие игрока: плашка над местом и строка в логе
-const ACT_KEYS = { fold: 'Fold', check: 'Check', call: 'Call', callAllin: 'CallAllin', bet: 'Bet', raise: 'Raise', allin: 'Allin', sb: 'Sb', bb: 'Bb' };
+const ACT_KEYS = { fold: 'Fold', check: 'Check', call: 'Call', callAllin: 'CallAllin', bet: 'Bet', raise: 'Raise', allin: 'Allin', sb: 'Sb', bb: 'Bb',
+  hit: 'Hit', stand: 'Stand', bust: 'Bust', bj: 'Bj', ante: 'Ante' };
+const GAME_KEY = { holdem: 'gHoldem', omaha: 'gOmaha', bj: 'gBj' };
+const GAME_ICON = { holdem: '♠', omaha: '♦', bj: '♣' };
+const FELT_LOGO = { holdem: "♠ HOLD'EM", omaha: '♦ OMAHA', bj: '♣ BLACKJACK' };
+// Подсказка «У тебя: …» для своей руки в любой из игр
+function myHandText(v, me) {
+  if (!me || !me.cards || !me.cards.length || !me.inHand || me.folded) return '';
+  const g = v.settings.game;
+  if (g === 'bj') {
+    const b = bjTotal(me.cards);
+    if (b.total > 21) return t('aBust') + ' (' + b.total + ')';
+    if (me.cards.length === 2 && b.total === 21) return t('bjName21');
+    return b.soft && b.total < 21 ? `${b.total} (${t('bjSoftTag')})` : String(b.total);
+  }
+  if (g === 'omaha') { const r = bestOmaha(me.cards, v.board); return r ? handName(r.score) : ''; }
+  return me.cards.length === 2 ? currentHandName(me.cards.concat(v.board)) : '';
+}
+function setRulesBtn(g) { document.querySelectorAll('.combosBtn').forEach(b => { b.textContent = g === 'bj' ? t('rulesBtn') : t('combosBtn'); }); }
 function lastLabel(l) {
   if (!l || !ACT_KEYS[l.a]) return '';
   const word = t('a' + ACT_KEYS[l.a]);
@@ -1581,6 +1828,7 @@ function hostHandle(pid, d) {
     case 'settings': if (pid === 'host') err = table.updateSettings(d.s); break;
     case 'start': if (pid === 'host') err = table.startGame(); break;
     case 'newgame': if (pid === 'host') err = table.newGame(); break;
+    case 'tolobby': if (pid === 'host') err = table.toLobby(); break;
   }
   if (err) toastTo(pid, err);
 }
@@ -1774,6 +2022,7 @@ function muckAll() {
 let localTurnDeadline = 0, localNextDeadline = 0;
 function render(v) {
   view = v;
+  if (v.phase !== 'gameover' && !$('#victory').classList.contains('hidden')) { $('#victory').classList.add('hidden'); stopConfetti(); victoryShownFor = ''; }
   localTurnDeadline = v.turnLeft ? Date.now() + v.turnLeft : 0;
   localNextDeadline = v.nextLeft ? Date.now() + v.nextLeft : 0;
   if (v.phase === 'lobby') { show('lobby'); renderLobby(v); }
@@ -1791,25 +2040,37 @@ function renderLobby(v) {
     `<li style="${animStyle(anim('lp-' + p.id, 'slideIn', 450))}"><span>${avaHTML(p.name, 'lav')}${esc(p.name)}${p.id === myId ? ` <small>${t('you')}</small>` : ''}</span><small>${p.isHost ? t('host') : t('player')}</small></li>`).join('');
   const s = v.settings;
   const box = $('#lobbySettings');
+  setRulesBtn(s.game);
   if (isHost) {
-    if (!box.dataset.built) {
-      box.dataset.built = '1';
+    const bk = s.game + '|' + LANG;
+    if (box.dataset.built !== bk) {
+      box.dataset.built = bk;
+      const isBj = s.game === 'bj';
       box.innerHTML = `
+        <div class="games">${['holdem', 'omaha', 'bj'].map(g => `<button type="button" class="gamebtn g-${g}${g === s.game ? ' on' : ''}" data-game="${g}">
+          <span class="gi">${GAME_ICON[g]}</span><b>${t(GAME_KEY[g])}</b><small>${t(GAME_KEY[g] + 'D')}</small></button>`).join('')}</div>
         <div class="field"><label>${t('sStack')}</label><input type="number" id="sStack" min="20"></div>
         <div class="field"><label>${t('sTime')}</label><input type="number" id="sTime" min="0" max="300"></div>
-        <div class="field"><label>${t('sSb')}</label><input type="number" id="sSb" min="1"></div>
-        <div class="field"><label>${t('sBb')}</label><input type="number" id="sBb" min="1"></div>
+        ${isBj ? `<div class="field" style="grid-column:1/-1"><label>${t('sAnte')}</label><input type="number" id="sAnte" min="1"></div>`
+               : `<div class="field"><label>${t('sSb')}</label><input type="number" id="sSb" min="1"></div><div class="field"><label>${t('sBb')}</label><input type="number" id="sBb" min="1"></div>`}
         <label class="check"><input type="checkbox" id="sRebuy"> ${t('sRebuy')}</label>`;
-      for (const id of ['sStack', 'sTime', 'sSb', 'sBb', 'sRebuy']) $('#' + id).addEventListener('change', () => send({ t: 'settings', s: {
-        startStack: $('#sStack').value, turnTime: $('#sTime').value, sb: $('#sSb').value, bb: $('#sBb').value, rebuy: $('#sRebuy').checked } }));
+      const val = (id, def) => { const el = document.getElementById(id); return el ? el.value : def; };
+      const sendS = game => { const cur = view.settings; send({ t: 'settings', s: { game: game || cur.game, startStack: val('sStack', cur.startStack), turnTime: val('sTime', cur.turnTime),
+        sb: val('sSb', cur.sb), bb: val('sBb', cur.bb), ante: val('sAnte', cur.ante), rebuy: $('#sRebuy').checked } }); };
+      box.querySelectorAll('input').forEach(el => el.addEventListener('change', () => sendS()));
+      box.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => sendS(b.dataset.game)));
     }
-    $('#sStack').value = s.startStack; $('#sTime').value = s.turnTime; $('#sSb').value = s.sb; $('#sBb').value = s.bb; $('#sRebuy').checked = s.rebuy;
+    $('#sStack').value = s.startStack; $('#sTime').value = s.turnTime; $('#sRebuy').checked = s.rebuy;
+    if ($('#sSb')) { $('#sSb').value = s.sb; $('#sBb').value = s.bb; }
+    if ($('#sAnte')) $('#sAnte').value = s.ante;
     $('#startBtn').classList.remove('hidden');
     $('#startBtn').disabled = v.players.length < 2;
     $('#lobbyStatus').textContent = v.players.length < 2 ? t('waitFriend') : '';
   } else {
+    box.dataset.built = '';
     box.innerHTML = `<div style="grid-column:1/-1;font-size:14px;line-height:1.7">
-      ${t('iStack')}: <b>${fmt(s.startStack)}</b> · ${t('iBlinds')}: <b>${s.sb}/${s.bb}</b><br>
+      <div class="gamechip">${GAME_ICON[s.game]} <b>${t(GAME_KEY[s.game])}</b> — ${t(GAME_KEY[s.game] + 'D')}</div>
+      ${t('iStack')}: <b>${fmt(s.startStack)}</b> · ${s.game === 'bj' ? `${t('iAnte')}: <b>${fmt(s.ante)}</b>` : `${t('iBlinds')}: <b>${s.sb}/${s.bb}</b>`}<br>
       ${t('iTime')}: <b>${s.turnTime ? s.turnTime + ' ' + t('sec') : t('noLimit')}</b> · ${t('iRebuy')}: <b>${s.rebuy ? t('yes') : t('no')}</b></div>`;
     $('#startBtn').classList.add('hidden');
     $('#lobbyStatus').textContent = t('waitHost');
@@ -1843,7 +2104,7 @@ function renderInfo(v, me) {
   const sorted = v.players.slice().sort((a, b) => b.stack - a.stack);
   const rank = me ? sorted.findIndex(p => p.id === me.id) + 1 : 0;
   $('#infop').innerHTML = `
-    <div>${t('iBlinds')}</div><div><b>${fmt(v.settings.sb)}/${fmt(v.settings.bb)}</b></div><div>${t('iHand')}</div><div><b>${v.handNo ? '#' + v.handNo : '—'}</b></div>
+    ${v.settings.game === 'bj' ? `<div>${t('iAnte')}</div><div><b>${fmt(v.settings.ante)}</b></div>` : `<div>${t('iBlinds')}</div><div><b>${fmt(v.settings.sb)}/${fmt(v.settings.bb)}</b></div>`}<div>${t('iHand')}</div><div><b>${v.handNo ? '#' + v.handNo : '—'}</b></div>
     <div>${t('iAvg')}</div><div><b>${fmt(avg)}</b></div><div>${t('iRank')}</div><div><b>${rank ? rank + ' / ' + v.players.length : '—'}</b></div>`;
 }
 function seatLayout(v) {
@@ -1889,11 +2150,12 @@ function seatLayout(v) {
 
 let prevView = null, handFx = { hand: -1, winDelay: 0, collect: 0 };
 function renderGame(v) {
+  const game = v.settings.game, isBj = game === 'bj';
   const prev = prevView && prevView.phase !== 'lobby' ? prevView : null;
   prevView = v;
   const sameHand = !!prev && prev.handNo === v.handNo;
   const me = v.players.find(p => p.id === myId);
-  const inPlay = ['preflop', 'flop', 'turn', 'river'].includes(v.phase);
+  const inPlay = ['preflop', 'flop', 'turn', 'river', 'bj'].includes(v.phase);
   const L = seatLayout(v);
   const T = tableRect(); const W = T.width || 1000, Ht = T.height || 570;
   const potXY = potPos();
@@ -1941,13 +2203,18 @@ function renderGame(v) {
   for (const p of v.players) tweenTo('s-' + p.id, p.stack, 0, 450);
 
   const winnerIds = new Set(v.phase === 'handover' && v.result ? v.result.winners.map(w => w.id) : []);
-  const showdownView = v.phase === 'handover' && v.result && !v.result.uncontested;
+  const showdownView = v.phase === 'handover' && v.result && !v.result.uncontested && !isBj;
   const hl = new Set(showdownView ? v.result.highlight : []);
+  const initN = game === 'omaha' ? 4 : 2;   // сколько карт сдаётся в начале
   const wd = handFx.hand === v.handNo ? handFx.winDelay : 0;
   const hand = v.handNo;
 
   $('#tCode').textContent = roomCode;
   renderInfo(v, me);
+  $('#tGame').textContent = GAME_ICON[game] + ' ' + t(GAME_KEY[game]);
+  $('.felt').dataset.logo = FELT_LOGO[game];
+  $('.felt').classList.toggle('bjmode', isBj);
+  setRulesBtn(game);
 
   // борд
   let bh = '';
@@ -1973,7 +2240,10 @@ function renderGame(v) {
 
   // итог раздачи
   const banner = $('#banner');
-  if (v.phase === 'handover' && v.result) {
+  if (v.phase === 'handover' && v.result && v.result.allBust) {
+    banner.innerHTML = t('l.allBust') + `<br><small id="nextCd"></small>`; banner.classList.remove('hidden');
+    banner.style.cssText = animStyle(anim('bn' + hand, 'bannerIn', 550, 200, 'cubic-bezier(.3,1.4,.5,1)'));
+  } else if (v.phase === 'handover' && v.result) {
     let h = v.result.winners.map(w => `<b>${esc(w.name)}</b> +${fmt(w.amount)}${w.hand ? ' — ' + esc(handName(w.hand)) : ''}`).join('<br>');
     const side = v.result.pots.filter(p => p.kind === 'side');
     if (side.length) h += `<br><small>${t('sidePots', { n: side.length })}</small>`;
@@ -2006,20 +2276,34 @@ function renderGame(v) {
     let hole = '';
     if (p.inHand && p.cardCount > 0 && (!p.folded || p.id === myId)) {
       const fx = `--fx:${Math.round((50 - pos.x) * W / 100)}px;--fy:${Math.round((40 - pos.y) * Ht / 100 + 30)}px;`;
-      hole = (p.cards || [null, null]).map((c, ci) => {
-        const a = [anim(`d${hand}-${p.id}-${ci}`, 'dealFly', 500, dealBase + (ci * cnt + (order[p.id] || 0)) * 110, 'cubic-bezier(.2,.7,.25,1)')];
+      const cardsArr = p.cards || Array(p.cardCount).fill(null);
+      const nC = cardsArr.length, spread = Math.min(24, 6 * nC);
+      hole = cardsArr.map((c, ci) => {
+        const dealDelay = ci < initN ? dealBase + (ci * cnt + (order[p.id] || 0)) * 110 : 0;
+        const a = [anim(`d${hand}-${p.id}-${ci}`, 'dealFly', 500, dealDelay, 'cubic-bezier(.2,.7,.25,1)')];
         let ccls = '';
-        if (c && p.id !== myId) a.push(anim(`r${hand}-${p.id}-${ci}`, 'flipIn', 500, collect + ci * 140, 'cubic-bezier(.3,1.3,.5,1)'));
+        // открытие карт соперника; в блэкджеке переворачивается только скрытая первая карта
+        if (c && p.id !== myId && (!isBj || ci === 0)) a.push(anim(`r${hand}-${p.id}-${ci}`, 'flipIn', 500, collect + ci * 140, 'cubic-bezier(.3,1.3,.5,1)'));
         if (showdownView && !p.folded && c) {
           if (hl.has(c)) { ccls = 'win'; a.push(anim(`hw${hand}-${p.id}-${ci}`, 'winIn', 500, wd)); }
           else { ccls = 'dim'; a.push(anim(`hd${hand}-${p.id}-${ci}`, 'dimIn', 500, wd)); }
         }
-        return `<div class="fan f${ci}">${cardHTML(c, ccls, fx + animStyle(...a))}</div>`;
+        const ang = nC > 1 ? -spread / 2 + ci * spread / (nC - 1) : 0;
+        return `<div class="fan f${ci}" style="transform:rotate(${ang.toFixed(1)}deg) translateY(${(Math.abs(ang) * 0.035).toFixed(2)}cqw)">${cardHTML(c, ccls, fx + animStyle(...a))}</div>`;
       }).join('');
+      // блэкджек: очки над картами (у соперников — только открытые карты)
+      if (isBj) {
+        const vis = bjTotal(cardsArr.filter(Boolean)), hidden = cardsArr.some(c => !c);
+        const txt = hidden ? vis.total + '+?' : String(vis.total);
+        const bc = !hidden && vis.total > 21 ? ' bust' : (!hidden && vis.total === 21 ? ' b21' : '');
+        hole += `<div class="bjt${bc}" style="${animStyle(anim(`bt${hand}-${p.id}-${txt}`, 'pop', 350))}">${txt}</div>`;
+      }
     }
+    if (isBj && p.last && p.last.a === 'bust') cls.push('busted');
 
     let label = lastLabel(p.last);
-    let ac = p.last ? ({ fold: 'fold', check: 'check', call: 'call', bet: 'raise', raise: 'raise', allin: 'allin', sb: 'blind', bb: 'blind' })[p.last.a] || 'info' : 'empty';
+    let ac = p.last ? ({ fold: 'fold', check: 'check', call: 'call', bet: 'raise', raise: 'raise', allin: 'allin', sb: 'blind', bb: 'blind',
+      hit: 'call', stand: 'check', bust: 'fold', bj: 'allin', ante: 'blind' })[p.last.a] || 'info' : 'empty';
     if (!p.connected) { label = t('stDisc'); ac = 'info'; }
     else if (p.sitOut) { label = t('stAway'); ac = 'info'; }
     else if (!p.inHand && v.phase !== 'waiting') { label = p.stack > 0 ? t('stWaitHand') : t('stNoChips'); ac = 'info'; }
@@ -2039,7 +2323,7 @@ function renderGame(v) {
     const hn = p.handScore ? `<div class="hn" style="${animStyle(anim(`hn${hand}-${p.id}`, 'pop', 420, Math.max(collect, wd - 300)))}">${esc(handName(p.handScore))}</div>` : '';
     const timer = timed ? '<div class="tbar"><i id="tbarFill"></i></div>' : '';
     sh += `<div class="${cls.join(' ')}" style="left:${pos.x}%;top:${pos.y}%;${animStyle(anim('seat-' + p.id, 'seatIn', 550, i * 70, 'cubic-bezier(.3,1.4,.5,1)'))}">
-      <div class="hole">${hole}</div>
+      <div class="hole n${Math.min(6, p.cardCount || 0)}">${hole}</div>
       ${ava}
       <div class="act ${ac}" style="${lblStyle}">${label ? esc(label) : '&nbsp;'}</div>
       <div class="plate" style="${plateStyle}">
@@ -2073,7 +2357,7 @@ function renderActions(v, me, inPlay) {
   const bar = $('#actions');
   if (!me) { actionsKey = 'spectator'; bar.innerHTML = `<div class="waittext">${t('spectator')}</div>`; return; }
   const myTurn = v.toAct === myId && inPlay;
-  const key = [v.phase, v.handNo, v.toAct, v.currentBet, me.stack, me.bet, me.sitOut, me.inHand, me.folded, v.board.length, myTurn].join('|');
+  const key = [v.phase, v.handNo, v.toAct, v.currentBet, me.stack, me.bet, me.sitOut, me.inHand, me.folded, v.board.length, me.cardCount, myTurn, LANG].join('|');
   if (key === actionsKey) return;
   const wasMyTurn = bar.classList.contains('myturn');
   actionsKey = key;
@@ -2084,7 +2368,8 @@ function renderActions(v, me, inPlay) {
   if (me.stack === 0 && v.settings.rebuy && !(inPlay && me.inHand && !me.folded)) extras.push(`<button class="primary small" data-act="rebuy">${t('rebuyBtn', { n: v.settings.startStack })}</button>`);
   extras.push(me.sitOut ? `<button class="primary small" data-act="back">${t('backBtn')}</button>` : `<button class="ghost small" data-act="away">${t('awayBtn')}</button>`);
   let myHand = '';
-  if (me.cards && me.cards.length === 2 && me.inHand && !me.folded) myHand = `<div class="myhand">${t('yourHand')} <b>${esc(currentHandName(me.cards.concat(v.board)))}</b></div>`;
+  const mh = myHandText(v, me);
+  if (mh) myHand = `<div class="myhand">${t('yourHand')} <b>${esc(mh)}</b></div>`;
   let txt = '';
   if (!myTurn) {
     if (inPlay) { const p = v.players.find(q => q.id === v.toAct); txt = p ? t('turnOf', { name: esc(p.name) }) : t('dealing'); }
@@ -2100,8 +2385,34 @@ function renderActions(v, me, inPlay) {
     return;
   }
 
+  const two = (a, b) => `<span class="l1">${a}</span>${b !== '' ? `<span class="l2">${b}</span>` : ''}`;
+  if (v.settings.game === 'bj') {
+    // риск перебора: какая доля ещё не открытых карт даст больше 21, если взять карту
+    const known = new Set();
+    for (const q of v.players) for (const c of (q.cards || [])) if (c) known.add(c);
+    const unknown = makeDeck().filter(c => !known.has(c));
+    const bustN = unknown.filter(c => bjTotal(me.cards.concat([c])).total > 21).length;
+    const pct = unknown.length ? Math.round(bustN / unknown.length * 100) : 0;
+    const b = bjTotal(me.cards);
+    const risk = pct < 30 ? 'lo' : pct < 60 ? 'mid' : 'hi';
+    bar.innerHTML = left + `<div class="act-panel">
+      <div class="sizer bjinfo">
+        <div class="bji"><span>${t('bjYour')}</span><b>${b.total}${b.soft && b.total < 21 ? ` <small>${t('bjSoftTag')}</small>` : ''}</b></div>
+        <div class="bji"><span>${t('bjBustChance')}</span><b class="risk ${risk}">${pct}%</b></div>
+        <div class="bji"><span>${t('pot')}</span><b>${fmt(v.pot)}</b></div>
+      </div>
+      <div class="bigbtns">
+        <button class="big" data-act="stand">${two(t('standBtn'), '')}</button>
+        <button class="big hit" data-act="hit">${two(t('hitBtn'), '')}</button></div></div>`;
+    bindExtras(bar);
+    if (!reduceMotion) bar.querySelectorAll('.act-panel .big, .act-panel .sizer').forEach((el, i) => el.style.animation = `barUp .4s cubic-bezier(.3,1.3,.5,1) ${i * 60}ms backwards`);
+    return;
+  }
   const toCall = v.currentBet - me.bet;
-  const maxTo = me.bet + me.stack;
+  const allInTo = me.bet + me.stack;
+  // Омаха — пот-лимит: максимум = текущая ставка + банк после уравнивания
+  const plTo = v.settings.game === 'omaha' ? v.currentBet + v.pot + toCall : Infinity;
+  const maxTo = Math.min(allInTo, plTo);
   const canRaise = me.mayRaise && maxTo > v.currentBet;
   const minTo = Math.min(v.currentBet + v.minRaise, maxTo);
   const isBet = v.currentBet === 0;
@@ -2112,7 +2423,6 @@ function renderActions(v, me, inPlay) {
   let presets;
   presets = [[33, 1 / 3], [50, 1 / 2], [75, 3 / 4], [100, 1]].map(([lbl, f]) => ({ label: lbl === 100 ? t('potPreset') : lbl + '%', to: v.currentBet + Math.round(f * potAfterCall) }));
 
-  const two = (a, b) => `<span class="l1">${a}</span>${b !== '' ? `<span class="l2">${b}</span>` : ''}`;
   let panel = '<div class="act-panel">';
   if (canRaise && maxTo > minTo) {
     panel += `<div class="sizer">
@@ -2126,7 +2436,7 @@ function renderActions(v, me, inPlay) {
   if (toCall <= 0) panel += `<button class="big" data-act="check">${two(t('aCheck'), '')}</button>`;
   else panel += `<button class="big" data-act="call">${two(toCall >= me.stack ? t('aCallAllin') : t('aCall'), fmt(Math.min(toCall, me.stack)))}</button>`;
   if (canRaise) {
-    if (maxTo <= minTo) panel += `<button class="big" data-act="allin">${two(t('aAllin'), fmt(maxTo))}</button>`;
+    if (maxTo <= minTo) panel += `<button class="big" data-act="allin">${two(maxTo === allInTo ? t('aAllin') : t('aRaise'), fmt(maxTo))}</button>`;
     else panel += `<button class="big" id="bRaise" data-act="raise"></button>`;
   }
   panel += '</div></div>';
@@ -2140,7 +2450,7 @@ function renderActions(v, me, inPlay) {
       val = Math.max(minTo, Math.min(maxTo, Math.floor(Number(val) || minTo)));
       slider.value = val; num.value = val;
       slider.style.setProperty('--fill', ((val - minTo) / (maxTo - minTo) * 100).toFixed(1) + '%');
-      btn.innerHTML = two(val === maxTo ? t('aAllin') : (isBet ? t('aBet') : t('aRaise')), fmt(val));
+      btn.innerHTML = two(val === allInTo ? t('aAllin') : (isBet ? t('aBet') : t('aRaise')), fmt(val));
       bar.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('on', Math.min(maxTo, Math.max(minTo, presets[+b.dataset.p].to)) === val));
     };
     slider.addEventListener('input', () => setVal(slider.value));
@@ -2397,13 +2707,27 @@ const COMBOS = [
 function myComboCat() {
   if (!view || !myId) return -1;
   const me = view.players.find(p => p.id === myId);
-  if (!me || !me.cards || me.cards.length !== 2 || !me.inHand || me.folded) return -1;
+  if (!me || !me.cards || !me.inHand || me.folded) return -1;
+  if (view.settings.game === 'bj') return -1;
+  if (view.settings.game === 'omaha') {
+    const r = bestOmaha(me.cards, view.board); if (!r) return -1;
+    return r.score[0] === 8 && r.score[1] === 14 ? 9 : r.score[0];
+  }
+  if (me.cards.length !== 2) return -1;
   const cards = me.cards.concat(view.board);
   if (cards.length < 5) return rankVal(cards[0]) === rankVal(cards[1]) ? 1 : 0;
   const s = bestHand(cards).score;
   return s[0] === 8 && s[1] === 14 ? 9 : s[0];
 }
 function renderCombos() {
+  const g = view && view.settings ? view.settings.game : 'holdem';
+  const box = $('.combos-box');
+  box.querySelector('h2').textContent = g === 'bj' ? t('bjRulesTitle') : t('combosTitle');
+  box.querySelector('.sub').textContent = g === 'bj' ? t('bjRulesSub') : t('combosSub');
+  $('.combo-tips').classList.toggle('hidden', g === 'bj');
+  $('#omahaTip').classList.toggle('hidden', g !== 'omaha');
+  $('#omahaTip').innerHTML = t('omahaTip');
+  if (g === 'bj') { $('#comboList').innerHTML = `<div class="bjrules">${I18N[LANG].bjRules.map(r => `<div>${r}</div>`).join('')}</div>`; return; }
   const mine = myComboCat();
   $('#comboList').innerHTML = COMBOS.map((c, i) => `<div class="combo${c.cat === mine ? ' mine' : ''}">
     <div class="num">${i + 1}</div>
@@ -2540,7 +2864,7 @@ function renderVictory(v, me) {
   if (st.bigPot) stats += `<div>${t('vBigPot', { n: st.bigPot.n, name: esc(st.bigPot.name) })}</div>`;
   if (st.best) stats += `<div>${t('vBestHand', { hand: st.best.hand, name: esc(st.best.name) })}</div>`;
   let btns = '';
-  if (isHost) btns += `<button class="primary" data-v="new">${t('vNewGame')}</button>`;
+  if (isHost) btns += `<button class="primary" data-v="new">${t('vNewGame')}</button><button data-v="lobby">${t('vLobby')}</button>`;
   if (me && me.stack === 0 && v.settings.rebuy) btns += `<button data-v="rebuy">${t('rebuyBtn', { n: v.settings.startStack })}</button>`;
   btns += `<button class="ghost" data-v="leave">${t('toMenu')}</button>`;
   if (!isHost) btns += `<div class="vwait">${t('vWaitHost')}</div>`;
@@ -2556,6 +2880,7 @@ function renderVictory(v, me) {
   $('#vbox').querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => {
     const a = b.dataset.v;
     if (a === 'new') send({ t: 'newgame' });
+    else if (a === 'lobby') send({ t: 'tolobby' });
     else if (a === 'rebuy') send({ t: 'rebuy' });
     else { try { if (peer) peer.destroy(); } catch (e) {} location.reload(); }
   }));
@@ -2665,6 +2990,11 @@ document.addEventListener('keydown', e => {
   if (currentScreen !== 'game' || !view || view.toAct !== myId || !$('#combos').classList.contains('hidden')) return;
   if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
   const k = e.key.toLowerCase();
+  if (view.settings.game === 'bj') {   // блэкджек: H — взять, S — хватит
+    if (k === 'h' || k === 'р' || k === 'r' || k === 'к') doAct('hit');
+    else if (k === 's' || k === 'ы' || k === 'c' || k === 'с') doAct('stand');
+    return;
+  }
   if (k === 'f' || k === 'а') doAct('fold');
   else if (k === 'c' || k === 'с') { const b = $('#actions [data-act="check"], #actions [data-act="call"]'); if (b) doAct(b.dataset.act); }
   else if (k === 'r' || k === 'к') { if ($('#rNum')) doAct('raise'); else if ($('#actions [data-act="allin"]')) doAct('allin'); }
