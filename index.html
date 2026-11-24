@@ -120,6 +120,18 @@ label{font-size:13px;color:var(--muted)}
 .tabs button{flex:1;border-radius:0;background:transparent;border-bottom:2px solid transparent;padding:10px;position:relative}
 .tabs button.on{border-bottom-color:var(--accent)}
 .tabs button.unread::after{content:"";position:absolute;top:8px;right:16px;width:8px;height:8px;border-radius:50%;background:var(--red)}
+.tabs button[data-n]::after,#sideBtn[data-n]::after{content:attr(data-n);position:absolute;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--red);color:#fff;
+  font:800 11px/18px system-ui,sans-serif;text-align:center;box-shadow:0 0 0 2px var(--panel);animation:badgePop .35s cubic-bezier(.3,1.6,.5,1)}
+.tabs button[data-n]::after{top:5px;right:10px;width:auto;height:18px}
+@keyframes badgePop{from{transform:scale(0)}}
+.typing{min-height:20px;padding:0 12px 2px;font-size:12px;color:var(--muted);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.typing:empty{min-height:0;padding:0}
+.typing i{display:inline-flex;gap:2px;margin-left:3px;vertical-align:middle}
+.typing i span{width:4px;height:4px;border-radius:50%;background:currentColor;animation:typDot 1.2s infinite}
+.typing i span:nth-child(2){animation-delay:.15s}.typing i span:nth-child(3){animation-delay:.3s}
+@keyframes typDot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.feed .cmsg .pn{font-weight:800}
+.feed .cmsg .medals{font-size:.92em;margin-right:2px}
 .feed{flex:1;overflow:auto;padding:10px 12px;font-size:13px;line-height:1.5;min-height:0}
 .feed div{padding:1px 0}
 .feed .hd{color:var(--accent);margin-top:6px}
@@ -336,6 +348,7 @@ body{background:radial-gradient(ellipse at 50% 35%,#133338 0%,#08191c 55%,#030a0
 .topbar button{position:relative}
 #sideBtn.on{border-color:var(--accent)}
 #sideBtn.unread::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--red)}
+#sideBtn[data-n]::after{top:-7px;right:-7px}
 .infop{position:static;box-shadow:none}
 #toast{background:#0e2228;border-color:#2b4a54;color:#e9f1f3}
 .card{--cw:calc(4cqw*var(--k,1))}
@@ -912,7 +925,33 @@ body.ingame #langBar{display:none}
 .pmedal.fold{background:rgba(220,230,240,.1);border-color:rgba(220,230,240,.4);color:#e4ebef}
 .pmedal.allin{background:rgba(255,90,20,.13);border-color:rgba(255,120,40,.5);color:#ffb38a}
 .pmedal.elo{background:rgba(154,123,255,.14);border-color:rgba(154,123,255,.5);color:#d9ccff}
+.medal.dev{width:auto;height:1.45em;padding:0 .42em;border-radius:.42em;margin-right:2px;font-family:ui-monospace,Consolas,monospace;letter-spacing:.04em;background:radial-gradient(circle at 50% 35%,#1d2b24,#06100b 75%);color:#7dffb0;
+  box-shadow:0 0 0 1.5px #39ff8f,0 0 10px rgba(57,255,143,.75);animation:devGlow 2.4s ease-in-out infinite}
+.medal.dev::before{display:none}
+.medal.dev::after{content:"";position:absolute;inset:-3px;border-radius:.6em;background:conic-gradient(from var(--da,0deg),transparent 0 70%,#39ff8f 85%,#d4ffe6 92%,transparent 100%);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1.5px));animation:devSpin 2.2s linear infinite;pointer-events:none}
+.medal.dev b{font-size:.78em;font-weight:900;text-shadow:0 0 4px rgba(57,255,143,.9);filter:none}
+@property --da{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes devSpin{to{--da:360deg}}
+@keyframes devGlow{0%,100%{box-shadow:0 0 0 1.5px #39ff8f,0 0 6px rgba(57,255,143,.5)}50%{box-shadow:0 0 0 1.5px #7dffb0,0 0 14px rgba(57,255,143,1)}}
+.pmedal.dev{background:rgba(57,255,143,.1);border-color:rgba(57,255,143,.5);color:#9dffc4;font-weight:700}
+.medal.vet{background:radial-gradient(circle at 35% 30%,#ffb3c0,#e0284a 45%,#7a0a22 90%);color:#fff;box-shadow:0 0 0 1.5px #ffd447,0 0 8px rgba(255,60,90,.7);animation:vetSpin 3s ease-in-out infinite}
+.medal.vet::before{background:linear-gradient(90deg,#ffd447 0 50%,#e0284a 50%)}
+.medal.vet b{font-size:.74em}
+@keyframes vetSpin{0%,80%,100%{transform:rotate(0)}88%{transform:rotate(-14deg)}94%{transform:rotate(10deg)}}
+.medal.low{background:radial-gradient(circle at 40% 30%,#8a7a66,#4b3f33 50%,#231c15 95%);color:#fff;box-shadow:0 0 0 1.5px #1a130d,0 0 5px rgba(120,90,60,.5);animation:lowSink 2.6s ease-in-out infinite;filter:saturate(.8)}
+.medal.low::before{background:linear-gradient(90deg,#3a3a3a 0 50%,#6b5a48 50%)}
+.medal.low b{font-size:.72em}
+@keyframes lowSink{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(.12em) rotate(-6deg)}}
+.pmedal.vet{background:rgba(224,40,74,.13);border-color:rgba(255,90,120,.5);color:#ffb3c0}
+.pmedal.low{background:rgba(120,90,60,.15);border-color:rgba(150,120,90,.5);color:#d9c7b0}
 .medal[data-mt]{cursor:help}
+/* за столом обрезается ник, а не медали */
+.plate .nm{display:flex;justify-content:center;align-items:center;gap:2px}
+.plate .nm .pn{min-width:min(4.2em,45%);overflow:hidden;text-overflow:ellipsis}
+.plate .nm>:not(.pn){flex-shrink:0}
+.plate .nm .medals{flex-shrink:1;min-width:0;overflow:hidden;font-size:.85em;padding:.45em .2em .2em;margin:-.45em 0 -.2em 0}
+.plate .nm .medal.dev{padding:0 .3em;font-size:.72em}
 .mtip{position:fixed;z-index:1000;max-width:260px;background:linear-gradient(#1d2f38,#0f1c22);border:1px solid #3a5a66;border-radius:10px;padding:8px 11px;
   box-shadow:0 8px 24px rgba(0,0,0,.6);pointer-events:none;display:flex;flex-direction:column;gap:2px;animation:mtipIn .15s ease}
 .mtip b{font-size:13px;color:#ffe08a}
@@ -1100,6 +1139,7 @@ body.tall .bk-fin{grid-template-columns:1fr}
     </div>
     <div class="feed" id="logFeed"></div>
     <div class="feed hidden" id="chatFeed"></div>
+    <div id="typing" class="typing"></div>
     <form class="chatform" id="chatForm">
       <input id="chatIn" maxlength="200" data-i18n-ph="chatPh" placeholder="Сообщение…" autocomplete="off">
       <button type="submit">➤</button>
@@ -2124,7 +2164,8 @@ class PokerTable {
   addChat(id, text) {
     const p = this.find(id); if (!p) return;
     text = String(text || '').trim().slice(0, 200); if (!text) return;
-    this.chat.push({ name: p.name, text }); this.chatTotal = (this.chatTotal || 0) + 1;
+    const rc = ['bj', 'pres', 'wolf', 'bunk'].includes(this.settings.game) ? 'bj' : 'poker';
+    this.chat.push({ name: p.name, text, uid: p.uid || null, r: p.ratings && typeof p.ratings[rc] === 'number' ? p.ratings[rc] : null }); this.chatTotal = (this.chatTotal || 0) + 1;
     if (this.chat.length > 100) this.chat.shift();
     this.changed();
   }
@@ -3214,7 +3255,7 @@ const I18N = {
     lobbyHint: 'Код стола — отправь его друзьям', copy: 'Скопировать код', playersLbl: 'Игроки за столом', settingsLbl: 'Настройки',
     start: 'Начать игру', combosBtn: '🃏 Комбинации', toMenu: 'Выйти в меню', tableLbl: 'Стол',
     full: '⛶ Весь экран', fullExit: '⛶ Свернуть', side: '💬 Лог и чат', leave: 'Выйти',
-    tabLog: 'Ход игры', tabChat: 'Чат', chatPh: 'Сообщение…',
+    tabLog: 'Ход игры', tabChat: 'Чат', chatPh: 'Сообщение…', typing1: '{a} печатает', typing2: '{a} и {b} печатают', typingN: '{n} человека печатают',
     cropTitle: 'Фото профиля', cropHint: 'Перетащи, чтобы подвинуть, колесо или ползунок — масштаб', cancel: 'Отмена', done: 'Готово', close: 'Закрыть',
     menuBtn: 'В меню', feltLogo: '♠ ПОКЕР',
     you: '(ты)', host: 'хост', player: 'игрок',
@@ -3293,6 +3334,9 @@ const I18N = {
     'e.presBadCards': 'Выбери карты одного достоинства', 'e.presCount': 'Нужно положить столько же карт: {n}', 'e.presLow': 'Нужно старше, чем на столе', 'e.presMustLead': 'Стол пуст — нужно сходить', 'e.tradeCount': 'Выбери карт: {n}',
     vSubPres: 'набирает больше всех очков', vRounds: 'Раундов сыграно: <b>{n}</b>', vChartPres: 'Очки по раундам', vTipRound: 'Раунд #{n}',
     mtWinT: 'Чемпион: {game}', mtWinD: 'Больше всех побед в этом режиме среди всех игроков — {n}',
+    mtDevT: 'Разработчик', mtDevD: 'Создатель Poker Extended. Если что-то сломалось — это к нему.', medalDevP: 'Разработчик игры',
+    mtVetT: 'Ветеран', mtVetD: 'Сыграл больше всех игр во всех режимах — игр: {n}', medalVetP: 'Ветеран — игр: {n}',
+    mtLowT: 'Дно', mtLowD: 'Медаль позора: самый низкий рейтинг среди всех игроков — {cat}: {n}', medalLowP: 'Дно — {cat}: {n}',
     mtEloT: 'Лучший рейтинг: {cat}', mtEloD: 'Самый высокий рейтинг среди всех игроков — {n}',
     mtFoldT: 'Король фолда', mtFoldD: 'Больше всех сбрасывал карты в покере — фолдов: {n}',
     mtAllinT: 'Безумец олл-ина', mtAllinD: 'Чаще всех шёл ва-банк в покере — олл-инов: {n}',
@@ -3429,7 +3473,7 @@ const I18N = {
     lobbyHint: 'Table code — send it to your friends', copy: 'Copy code', playersLbl: 'Players at the table', settingsLbl: 'Settings',
     start: 'Start game', combosBtn: '🃏 Hand rankings', toMenu: 'Back to menu', tableLbl: 'Table',
     full: '⛶ Full screen', fullExit: '⛶ Exit full screen', side: '💬 Log & chat', leave: 'Leave',
-    tabLog: 'Game log', tabChat: 'Chat', chatPh: 'Message…',
+    tabLog: 'Game log', tabChat: 'Chat', chatPh: 'Message…', typing1: '{a} is typing', typing2: '{a} and {b} are typing', typingN: '{n} people are typing',
     cropTitle: 'Profile photo', cropHint: 'Drag to move, scroll or use the slider to zoom', cancel: 'Cancel', done: 'Done', close: 'Close',
     menuBtn: 'Menu', feltLogo: '♠ POKER',
     you: '(you)', host: 'host', player: 'player',
@@ -3508,6 +3552,9 @@ const I18N = {
     'e.presBadCards': 'Pick cards of the same rank', 'e.presCount': 'You must play the same number of cards: {n}', 'e.presLow': 'You must play higher than the table', 'e.presMustLead': "The table is empty — you have to play", 'e.tradeCount': 'Pick cards: {n}',
     vSubPres: 'scores the most points', vRounds: 'Rounds played: <b>{n}</b>', vChartPres: 'Points by round', vTipRound: 'Round #{n}',
     mtWinT: 'Champion: {game}', mtWinD: 'Most wins in this mode of all players — {n}',
+    mtDevT: 'Developer', mtDevD: 'Creator of Poker Extended. If something breaks — blame him.', medalDevP: 'Game developer',
+    mtVetT: 'Veteran', mtVetD: 'Played more games than anyone across all modes — games: {n}', medalVetP: 'Veteran — games: {n}',
+    mtLowT: 'Rock Bottom', mtLowD: 'Medal of shame: lowest rating of all players — {cat}: {n}', medalLowP: 'Rock Bottom — {cat}: {n}',
     mtEloT: 'Top rating: {cat}', mtEloD: 'Highest rating of all players — {n}',
     mtFoldT: 'Fold King', mtFoldD: 'Folded more than anyone in poker — folds: {n}',
     mtAllinT: 'All-in Maniac', mtAllinD: 'Went all-in more than anyone in poker — all-ins: {n}',
@@ -3644,7 +3691,7 @@ const I18N = {
     lobbyHint: 'Tafelcode — stuur hem naar je vrienden', copy: 'Code kopiëren', playersLbl: 'Spelers aan tafel', settingsLbl: 'Instellingen',
     start: 'Spel starten', combosBtn: '🃏 Pokerhanden', toMenu: 'Terug naar menu', tableLbl: 'Tafel',
     full: '⛶ Volledig scherm', fullExit: '⛶ Verkleinen', side: '💬 Log & chat', leave: 'Verlaten',
-    tabLog: 'Spelverloop', tabChat: 'Chat', chatPh: 'Bericht…',
+    tabLog: 'Spelverloop', tabChat: 'Chat', chatPh: 'Bericht…', typing1: '{a} typt', typing2: '{a} en {b} typen', typingN: '{n} mensen typen',
     cropTitle: 'Profielfoto', cropHint: 'Sleep om te verplaatsen, scroll of gebruik de schuif om te zoomen', cancel: 'Annuleren', done: 'Klaar', close: 'Sluiten',
     menuBtn: 'Naar menu', feltLogo: '♠ POKER',
     you: '(jij)', host: 'host', player: 'speler',
@@ -3723,6 +3770,9 @@ const I18N = {
     'e.presBadCards': 'Kies kaarten van dezelfde waarde', 'e.presCount': 'Je moet evenveel kaarten leggen: {n}', 'e.presLow': 'Je moet hoger leggen dan op tafel', 'e.presMustLead': 'De tafel is leeg — je moet leggen', 'e.tradeCount': 'Kies kaarten: {n}',
     vSubPres: 'haalt de meeste punten', vRounds: 'Rondes gespeeld: <b>{n}</b>', vChartPres: 'Punten per ronde', vTipRound: 'Ronde #{n}',
     mtWinT: 'Kampioen: {game}', mtWinD: 'Meeste overwinningen in deze modus van alle spelers — {n}',
+    mtDevT: 'Ontwikkelaar', mtDevD: 'Maker van Poker Extended. Gaat er iets stuk — dan ligt het aan hem.', medalDevP: 'Ontwikkelaar van het spel',
+    mtVetT: 'Veteraan', mtVetD: 'Speelde de meeste potjes van iedereen in alle modi — potjes: {n}', medalVetP: 'Veteraan — potjes: {n}',
+    mtLowT: 'Dieptepunt', mtLowD: 'Medaille van schaamte: laagste rating van alle spelers — {cat}: {n}', medalLowP: 'Dieptepunt — {cat}: {n}',
     mtEloT: 'Hoogste rating: {cat}', mtEloD: 'Hoogste rating van alle spelers — {n}',
     mtFoldT: 'Foldkoning', mtFoldD: 'Foldde het vaakst van iedereen in poker — folds: {n}',
     mtAllinT: 'All-in-gek', mtAllinD: 'Ging het vaakst all-in van iedereen in poker — all-ins: {n}',
@@ -4084,7 +4134,8 @@ function hostHandle(pid, d) {
   let err = null;
   switch (d.t) {
     case 'act': err = table.act(pid, d.a, d.amount); break;
-    case 'chat': table.addChat(pid, d.text); break;
+    case 'chat': table.addChat(pid, d.text); hostRelayTyping(pid, false); break;
+    case 'typing': hostRelayTyping(pid, !!d.on); break;
     case 'voice': table.setVoice(pid, d.on, d.muted); break;
     case 'rebuy': err = table.rebuy(pid); break;
     case 'sit': err = table.setSitOut(pid, d.v); break;
@@ -4204,6 +4255,7 @@ function clientJoin(name, code) {
       if (d.t === 'welcome') { welcomed = true; clearTimeout(failTimer); myId = d.id; }
       else if (d.t === 'err') { clearTimeout(failTimer); setMenuBusy(false); menuStatus(errText(d.e), true); }
       else if (d.t === 'state') render(d.v);
+      else if (d.t === 'typing') onTyping(d.name, d.on);
       else if (d.t === 'toast') toast(errText(d.e));
       else if (d.t === 'ratings') onRatings(d);
       else if (d.t === 'avatars' && d.map && typeof d.map === 'object') { for (const k of Object.keys(d.map)) setAvatar(k, d.map[k]); if (view) render(view); }
@@ -5524,25 +5576,76 @@ function renderFeeds(v) {
     return l && l.k === 'hand' ? `<div class="hd" style="${st}">${esc(logText(l))}</div>` : `<div style="${st}">${esc(logText(l))}</div>`;
   }).join('');
   cf.innerHTML = v.chat.length
-    ? v.chat.map((m, i) => `<div style="${animStyle(anim('ch' + (cbase + i), 'feedIn', 400))}"><b>${esc(m.name)}:</b> ${esc(m.text)}</div>`).join('')
+    ? v.chat.map((m, i) => {
+      // цвет ника — по званию, рядом медали; берём свежий рейтинг игрока за столом, если он ещё здесь
+      const pl = v.players.find(q => q.name === m.name), r = pl && typeof pl.rating === 'number' ? pl.rating : m.r, uid = (pl && pl.uid) || m.uid;
+      return `<div class="cmsg" style="${animStyle(anim('ch' + (cbase + i), 'feedIn', 400))}"><b>${nameHTML(m.name, typeof r === 'number' ? r : undefined, uid)}:</b> ${esc(m.text)}</div>`;
+    }).join('')
     : `<div style="color:var(--muted)">${t('noMsgs')}</div>`;
   if (lb) lf.scrollTop = lf.scrollHeight;
   if (cb) cf.scrollTop = cf.scrollHeight;
-  const sideHidden = $('#game').classList.contains('noside');
+  const sideHidden = $('#game').classList.contains('noside'), me = myChatName(v);
   if (sideHidden && lastChatTotal >= 0 && ct > lastChatTotal) {
     const m = v.chat[v.chat.length - 1];
-    if (m) toast(`💬 ${m.name}: ${m.text}`);
-    $('#sideBtn').classList.add('unread');
+    if (m && m.name !== me) toast(`💬 ${m.name}: ${m.text}`);
   }
   lastChatTotal = ct;
   if (chatTab && !sideHidden) seenChat = ct;
-  $('#tabChat').classList.toggle('unread', !chatTab && ct > seenChat);
+  updateUnread(v);
+}
+// своё имя за столом — свои сообщения не считаются непрочитанными
+function myChatName(v) { const p = v && v.players && v.players.find(q => q.id === myId); return p ? p.name : null; }
+// счётчик непрочитанных: на кнопке 💬 (когда панель закрыта) и на вкладке «Чат»
+function updateUnread(v) {
+  v = v || view; if (!v) return;
+  const ct = v.chatTotal || v.chat.length, cbase = ct - v.chat.length, me = myChatName(v);
+  const n = v.chat.slice(Math.max(0, seenChat - cbase)).filter(m => m.name !== me).length;
+  const txt = n > 99 ? '99+' : String(n), sideHidden = $('#game').classList.contains('noside');
+  const setN = (el, on) => { if (on) { if (el.dataset.n !== txt) el.dataset.n = txt; } else delete el.dataset.n; };
+  $('#sideBtn').classList.remove('unread'); $('#tabChat').classList.remove('unread');
+  setN($('#sideBtn'), n > 0 && sideHidden);
+  setN($('#tabChat'), n > 0 && !chatTab);
 }
 function setTab(chat) {
   chatTab = chat;
   $('#tabLog').classList.toggle('on', !chat); $('#tabChat').classList.toggle('on', chat);
   $('#logFeed').classList.toggle('hidden', chat); $('#chatFeed').classList.toggle('hidden', !chat);
-  if (chat && view) { seenChat = view.chatTotal || view.chat.length; $('#tabChat').classList.remove('unread'); const cf = $('#chatFeed'); cf.scrollTop = cf.scrollHeight; }
+  if (chat && view) { seenChat = view.chatTotal || view.chat.length; const cf = $('#chatFeed'); cf.scrollTop = cf.scrollHeight; }
+  updateUnread(); renderTyping();
+}
+
+/* ---- «Дима печатает…»: хост просто пересылает отметку всем, в состояние стола она не попадает ---- */
+const TYPING = new Map(); let typingSentAt = 0, typingOn = false;
+function onTyping(name, on) {
+  if (!name || (view && name === myChatName(view))) return;
+  if (on) TYPING.set(name, Date.now() + 5000); else TYPING.delete(name);
+  renderTyping();
+}
+function renderTyping() {
+  const el = $('#typing'); if (!el) return;
+  const now = Date.now();
+  for (const [k, exp] of TYPING) if (exp < now) TYPING.delete(k);
+  const names = [...TYPING.keys()];
+  const dots = '<i><span></span><span></span><span></span></i>';
+  const html = !names.length || !chatTab ? '' : '✍️ ' + esc(names.length === 1 ? t('typing1', { a: names[0] }) : names.length === 2 ? t('typing2', { a: names[0], b: names[1] }) : t('typingN', { n: names.length })) + dots;
+  if (el.innerHTML !== html) el.innerHTML = html;
+}
+setInterval(() => { if (TYPING.size) renderTyping(); }, 1000);
+function sendTyping(on) {
+  if (!view) return;
+  const now = Date.now();
+  if (on && typingOn && now - typingSentAt < 2000) return;
+  if (!on && !typingOn) return;
+  typingOn = on; typingSentAt = now;
+  send({ t: 'typing', on });
+}
+function hostRelayTyping(pid, on) {
+  const p = table && table.find(pid); if (!p) return;
+  for (const q of table.players) {
+    if (q.id === pid || q.isBot) continue;
+    if (q.id === 'host') { onTyping(p.name, on); continue; }
+    const c = conns.get(q.id); if (c && c.open) c.send({ t: 'typing', name: p.name, on: !!on });
+  }
 }
 
 /* ---- покадровое обновление: счётчики, таймер, отсчёт ---- */
@@ -5743,7 +5846,10 @@ function fitTable() {
 try { new ResizeObserver(fitTable).observe($('#tableWrap')); } catch (e) { window.addEventListener('resize', fitTable); }
 window.addEventListener('resize', () => { if (detectLayout()) { lastFitKey = ''; actionsKey = ''; if (view && currentScreen === 'game') render(view); fitTable(); setTimeout(fitTable, 300); } });
 function setSide(on) {
+  // открыл панель, а там новые сообщения — сразу показываем чат
+  const hadUnread = on && !!$('#sideBtn').dataset.n;
   $('#game').classList.toggle('noside', !on);
+  if (hadUnread) setTab(true); else updateUnread();
   if (LAYOUT !== 'wide') { $('#sideBtn').classList.toggle('on', on); if (on) $('#sideBtn').classList.remove('unread'); setTimeout(fitTable, 50); return; }
   $('#sideBtn').classList.toggle('on', on);
   if (on) $('#sideBtn').classList.remove('unread');
@@ -6103,16 +6209,26 @@ function nameHTML(name, rating, uid) {
   return `<span class="pn${typeof rating === 'number' ? ' tn-' + tierOf(rating) : ''}">${esc(name)}</span>${medalsHTML(uid)}`;
 }
 let CHAMPS = {}, champsAt = 0, champsLoading = false;
+// медаль разработчика: ник занят в коллекции names, поэтому подделать её нельзя
+const DEV_NAME = 'avtobius', DEV_ICON = 'DEV';
+const isDev = uid => !!uid && !!CHAMPS.dev && CHAMPS.dev.uid === uid;
 const ELO_ICON = { poker: '♠', bj: '🎲' };
-const FUN_MEDALS = { folds: { icon: '🏳️', cls: 'fold', t: 'medalFoldT', p: 'medalFoldP' }, allins: { icon: '🔥', cls: 'allin', t: 'medalAllinT', p: 'medalAllinP' } };
-function funMedals(uid) { return ['allins', 'folds'].filter(k => CHAMPS['fun_' + k] && CHAMPS['fun_' + k].uid === uid); }
+const catName = c => t(c === 'bj' ? 'catBj' : 'catPoker');
+const FUN_MEDALS = {
+  vet: { icon: '🎰', cls: 'vet', tt: 'mtVetT', td: 'mtVetD', p: 'medalVetP', args: c => ({ n: c.n }) },
+  allins: { icon: '🔥', cls: 'allin', tt: 'mtAllinT', td: 'mtAllinD', p: 'medalAllinP', args: c => ({ n: c.n }) },
+  folds: { icon: '🏳️', cls: 'fold', tt: 'mtFoldT', td: 'mtFoldD', p: 'medalFoldP', args: c => ({ n: c.n }) },
+  low: { icon: '📉', cls: 'low', tt: 'mtLowT', td: 'mtLowD', p: 'medalLowP', args: c => ({ n: fmtR(c.r), cat: catName(c.cat) }) },
+};
+const FUN_ORDER = ['vet', 'allins', 'folds', 'low'];
+function funMedals(uid) { return FUN_ORDER.filter(k => CHAMPS['fun_' + k] && CHAMPS['fun_' + k].uid === uid); }
 function eloMedals(uid) { return ['poker', 'bj'].filter(c => CHAMPS['elo_' + c] && CHAMPS['elo_' + c].uid === uid); }
 function medalsHTML(uid) {
   if (!uid) return '';
-  const gs = GAMES.filter(g => CHAMPS[g] && CHAMPS[g].uid === uid), es = eloMedals(uid), fs = funMedals(uid);
-  if (!gs.length && !es.length && !fs.length) return '';
+  const gs = GAMES.filter(g => CHAMPS[g] && CHAMPS[g].uid === uid), es = eloMedals(uid), fs = funMedals(uid), dev = isDev(uid);
+  if (!dev && !gs.length && !es.length && !fs.length) return '';
   const mt = (cls, icon, head, desc) => `<i class="medal ${cls}" data-mt="${esc(head)}" data-md="${esc(desc)}"><b>${icon}</b></i>`;
-  return `<span class="medals">${fs.map(k => mt(FUN_MEDALS[k].cls, FUN_MEDALS[k].icon, FUN_MEDALS[k].icon + ' ' + t(FUN_MEDALS[k].cls === 'fold' ? 'mtFoldT' : 'mtAllinT'), t(FUN_MEDALS[k].cls === 'fold' ? 'mtFoldD' : 'mtAllinD', { n: CHAMPS['fun_' + k].n }))).join('')}`
+  return `<span class="medals">${dev ? mt('dev', DEV_ICON, '🛠️ ' + t('mtDevT'), t('mtDevD')) : ''}${fs.map(k => { const M = FUN_MEDALS[k], a = M.args(CHAMPS['fun_' + k]); return mt(M.cls, M.icon, M.icon + ' ' + t(M.tt, a), t(M.td, a)); }).join('')}`
     + es.map(c => mt('elo', ELO_ICON[c], '🏆 ' + t('mtEloT', { cat: t(c === 'bj' ? 'catBj' : 'catPoker') }), t('mtEloD', { n: fmtR(CHAMPS['elo_' + c].r) }))).join('')
     + gs.map(g => mt('', GAME_ICON[g], '🥇 ' + t('mtWinT', { game: t(GAME_KEY[g]) }), t('mtWinD', { n: CHAMPS[g].w }))).join('') + '</span>';
 }
@@ -6123,12 +6239,22 @@ async function loadChamps(force) {
   try {
     const snap = await ACC.db.collection('users').limit(1000).get();
     const best = {};
+    try { const ns = await ACC.db.collection('names').doc(DEV_NAME).get(); const du = ns.exists && (ns.data() || {}).uid; if (du) best.dev = { uid: du }; } catch (e) { }
     for (const d of snap.docs) {
       const u = d.data() || {}, st = u.stats || {};
       // шуточные медали: больше всех фолдов и олл-инов во всех видах покера
       for (const k of ['folds', 'allins']) {
         const n = ['holdem', 'omaha', 'pine'].reduce((sum, g) => sum + ((st[g] || {})[k] || 0), 0), key = 'fun_' + k, cur = best[key];
         if (n > 0 && (!cur || n > cur.n)) best[key] = { uid: d.id, n, name: u.name };
+      }
+      // ветеран: больше всего сыгранных игр во всех режимах вместе
+      { const n = GAMES.reduce((sum, g) => sum + ((st[g] || {}).games || 0), 0), cur = best.fun_vet;
+        if (n > 0 && (!cur || n > cur.n)) best.fun_vet = { uid: d.id, n, name: u.name }; }
+      // медаль позора: самый низкий рейтинг в любой категории (только у тех, кто сыграл хоть одну рейтинговую игру)
+      for (const c of ['poker', 'bj']) {
+        const r = (u.ratings || {})[c], gm = (u.games || {})[c] || 0, cur = best.fun_low;
+        if (typeof r !== 'number' || gm <= 0) continue;
+        if (!cur || r < cur.r || (r === cur.r && gm > cur.games)) best.fun_low = { uid: d.id, r, cat: c, games: gm, name: u.name };
       }
       // самый высокий рейтинг: покер и другие игры (только у тех, кто сыграл хоть одну рейтинговую игру)
       for (const c of ['poker', 'bj']) {
@@ -6538,7 +6664,7 @@ function renderProfile() {
   $('#profBody').innerHTML = `
     <div class="phead">${av}<div class="pinfo">
       <div class="pname">${nameHTML(d.name || '?', Math.max(r.poker ?? RATING_START, r.bj ?? RATING_START), null)}${mine ? ` <small>${t('you')}</small>` : ''}</div>
-      ${(() => { const gs = GAMES.filter(g => CHAMPS[g] && CHAMPS[g].uid === uid), es = eloMedals(uid), fs = funMedals(uid); return gs.length || es.length || fs.length ? `<div class="pmedals">${fs.map(k => `<span class="pmedal ${FUN_MEDALS[k].cls}"><i class="medal ${FUN_MEDALS[k].cls}"><b>${FUN_MEDALS[k].icon}</b></i>${t(FUN_MEDALS[k].p, { n: CHAMPS['fun_' + k].n })}</span>`).join('')}${es.map(c => `<span class="pmedal elo"><i class="medal elo"><b>${ELO_ICON[c]}</b></i>${t('medalEloP', { cat: t(c === 'bj' ? 'catBj' : 'catPoker'), n: fmtR(CHAMPS['elo_' + c].r) })}</span>`).join('')}${gs.map(g => `<span class="pmedal"><i class="medal"><b>${GAME_ICON[g]}</b></i>${t('medalP', { game: t(GAME_KEY[g]), n: CHAMPS[g].w })}</span>`).join('')}</div>` : ''; })()}
+      ${(() => { const gs = GAMES.filter(g => CHAMPS[g] && CHAMPS[g].uid === uid), es = eloMedals(uid), fs = funMedals(uid), dev = isDev(uid); return dev || gs.length || es.length || fs.length ? `<div class="pmedals">${dev ? `<span class="pmedal dev"><i class="medal dev"><b>${DEV_ICON}</b></i>${t('medalDevP')}</span>` : ''}${fs.map(k => `<span class="pmedal ${FUN_MEDALS[k].cls}"><i class="medal ${FUN_MEDALS[k].cls}"><b>${FUN_MEDALS[k].icon}</b></i>${t(FUN_MEDALS[k].p, FUN_MEDALS[k].args(CHAMPS['fun_' + k]))}</span>`).join('')}${es.map(c => `<span class="pmedal elo"><i class="medal elo"><b>${ELO_ICON[c]}</b></i>${t('medalEloP', { cat: t(c === 'bj' ? 'catBj' : 'catPoker'), n: fmtR(CHAMPS['elo_' + c].r) })}</span>`).join('')}${gs.map(g => `<span class="pmedal"><i class="medal"><b>${GAME_ICON[g]}</b></i>${t('medalP', { game: t(GAME_KEY[g]), n: CHAMPS[g].w })}</span>`).join('')}</div>` : ''; })()}
       ${since ? `<div class="psince">${t('profSince', { d: since })}</div>` : ''}
       ${GAMES.includes(d.fav) ? `<div class="pfav">${t('profFav')}: <b>${GAME_ICON[d.fav]} ${t(GAME_KEY[d.fav])}</b></div>` : ''}
       ${d.bio ? `<div class="pbio">«${esc(String(d.bio).slice(0, 120))}»</div>` : ''}
@@ -6663,8 +6789,10 @@ $('#tabChat').addEventListener('click', () => setTab(true));
 $('#chatForm').addEventListener('submit', e => {
   e.preventDefault();
   const t = $('#chatIn').value.trim(); if (!t) return;
-  send({ t: 'chat', text: t }); $('#chatIn').value = '';
+  send({ t: 'chat', text: t }); $('#chatIn').value = ''; typingOn = false;
 });
+$('#chatIn').addEventListener('input', e => sendTyping(!!e.target.value.trim()));
+$('#chatIn').addEventListener('blur', () => sendTyping(false));
 document.addEventListener('keydown', e => {
   if (currentScreen !== 'game' || !view || !$('#combos').classList.contains('hidden')) return;
   if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
