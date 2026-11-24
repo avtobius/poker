@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Poker Extended</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<!-- Firebase: аккаунты и рейтинг (без настроек ниже не используется) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --bg:#0d1411; --panel:#15201b; --panel2:#1b2822; --line:#2a3b33; --text:#e9f0ea; --muted:#8ea399;
@@ -631,6 +635,56 @@ body.ingame #langBar{display:none}
 .botbtns button:nth-child(1){border:1px solid #2f6a52}
 .botbtns button:nth-child(2){border:1px solid #6b5a22}
 .botbtns button:nth-child(3){border:1px solid #7a2a2a}
+
+/* ---------- Аккаунты, рейтинг, таблица лидеров ---------- */
+.accbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:-8px 0 16px}
+.acc-hint{font-size:13px;color:var(--muted);line-height:1.4;margin-bottom:8px}
+.acc-btns{display:flex;gap:6px;flex-wrap:wrap}
+.acc-btns button,.accbox .row button{padding:7px 12px;font-size:13px}
+.accbox .row{margin-bottom:6px}
+.accbox .row input{padding:7px 10px}
+.acc-me{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.acc-name{font-size:15px}
+.acc-r{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted)}
+.acc-err{color:#ff8a80;font-size:13px;min-height:1px;margin:4px 0}
+.acc-ok{color:#8fe3b0;font-size:13px;min-height:1px;margin:4px 0}
+#nameIn:disabled{opacity:.75;cursor:not-allowed}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:66;padding:16px}
+.modal:not(.hidden){animation:fadeIn .25s ease backwards}
+.modal .box{position:relative;max-height:calc(100vh - 32px);overflow:auto}
+.modal-close{position:absolute;right:12px;top:12px;padding:6px 11px;font-size:15px}
+.auth-box{width:min(380px,100%)}
+.lb-box{width:min(520px,100%)}
+.auth-tabs{display:flex;gap:4px;background:var(--bg);border-radius:10px;padding:3px;margin:0 36px 14px 0}
+.auth-tabs button{flex:1;padding:8px;font-size:14px;background:transparent;color:var(--muted)}
+.auth-tabs button.on{background:var(--panel2);color:#fff}
+.auth-box .field input{width:100%}
+.linkbtn{background:none;border:0;color:var(--muted);font-size:13px;font-weight:500;padding:8px 0 0;width:100%;text-decoration:underline}
+.linkbtn:hover{color:#fff;transform:none}
+.lb-msg{color:var(--muted);text-align:center;padding:24px 0}
+.lb-row{display:grid;grid-template-columns:34px 32px 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:9px;animation:slideIn .35s ease backwards}
+.lb-row:nth-child(odd){background:rgba(255,255,255,.025)}
+.lb-row.me{background:rgba(242,185,59,.12);outline:1px solid rgba(242,185,59,.4)}
+.lb-pos{text-align:center;font-weight:800;color:var(--muted);font-size:16px}
+.lb-row .ava{--ava:30px;font-size:11px}
+.lb-name{display:flex;flex-direction:column;min-width:0}
+.lb-name b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-name small{color:var(--muted);font-size:11px}
+.tier{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;white-space:nowrap;vertical-align:middle}
+.tier i{display:inline-block;width:10px;height:10px;transform:rotate(45deg);border-radius:2px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+.t-bronze i{background:linear-gradient(135deg,#e3a26b,#8a4f22)} .t-bronze{color:#e3a26b}
+.t-silver i{background:linear-gradient(135deg,#f2f5f7,#8e9aa3)} .t-silver{color:#cfd8de}
+.t-gold i{background:linear-gradient(135deg,#ffe28a,#c8921f)} .t-gold{color:#f2c04b}
+.t-plat i{background:linear-gradient(135deg,#bdfcf1,#3fb3a2)} .t-plat{color:#7ee7d6}
+.t-diamond i{background:linear-gradient(135deg,#d7e8ff,#5b8cff 60%,#b36bff)} .t-diamond{color:#9fbfff}
+.nm .tier{margin-right:.4cqw}
+.nm .tier i{width:max(7px,.75cqw);height:max(7px,.75cqw)}
+.plist .tier{margin-left:8px;font-size:11px}
+.rdelta{display:block;font-size:11px;font-weight:800;text-align:right}
+.rdelta.up{color:#54e08a}.rdelta.down{color:#ff6b5b}.rdelta.eq{color:var(--muted)}
+
+#lobby .box>div:last-child{flex-wrap:wrap}
+#lobby .box>div:last-child button{white-space:nowrap;font-size:13px;padding:8px 12px}
 </style>
 </head>
 <body>
@@ -642,6 +696,7 @@ body.ingame #langBar{display:none}
   <div class="box">
     <h1 class="logo" data-i18n-html="logo">POK<span>♥</span>R<em>EXTENDED</em></h1>
     <p class="sub" data-i18n="sub">Техасский холдем с друзьями</p>
+    <div id="accBox" class="accbox hidden"></div>
     <div class="field">
       <label for="nameIn" data-i18n="nameLbl">Твоё имя</label>
       <input id="nameIn" maxlength="16" data-i18n-ph="namePh" placeholder="Например, Макс" autocomplete="off">
@@ -680,7 +735,7 @@ body.ingame #langBar{display:none}
     <div class="settings" id="lobbySettings"></div>
     <button id="startBtn" class="primary wide" data-i18n="start">Начать игру</button>
     <div id="lobbyStatus" class="status"></div>
-    <div style="text-align:center;margin-top:10px;display:flex;gap:8px;justify-content:center"><button class="ghost combosBtn" type="button" data-i18n="combosBtn">🃏 Комбинации</button><button class="ghost leaveBtn" data-i18n="toMenu">Выйти в меню</button></div>
+    <div style="text-align:center;margin-top:10px;display:flex;gap:8px;justify-content:center"><button class="ghost combosBtn" type="button" data-i18n="combosBtn">🃏 Комбинации</button><button class="ghost lbBtn hidden" type="button" data-i18n="leaderboard">🏆 Рейтинг</button><button class="ghost leaveBtn" data-i18n="toMenu">Выйти в меню</button></div>
   </div>
 </div>
 
@@ -750,6 +805,28 @@ body.ingame #langBar{display:none}
     </div>
   </div>
 </div>
+<div id="authModal" class="modal hidden">
+  <div class="box auth-box">
+    <button class="ghost modal-close" type="button" data-close="authModal" data-i18n-aria="close" aria-label="Закрыть">✕</button>
+    <div class="auth-tabs"><button type="button" id="authTabLogin" class="on" data-i18n="login">Войти</button><button type="button" id="authTabReg" data-i18n="register">Регистрация</button></div>
+    <form id="authForm" autocomplete="on">
+      <div class="field hidden" id="authNameRow"><label for="authName" data-i18n="accName">Имя в игре</label><input id="authName" maxlength="16" autocomplete="nickname"></div>
+      <div class="field"><label for="authEmail" data-i18n="email">Почта</label><input id="authEmail" type="email" autocomplete="email" required></div>
+      <div class="field"><label for="authPass" data-i18n="password">Пароль</label><input id="authPass" type="password" autocomplete="current-password" minlength="6" required></div>
+      <div class="acc-err" id="authErr"></div><div class="acc-ok" id="authOk"></div>
+      <button type="submit" class="primary wide" id="authSubmit">Войти</button>
+      <button type="button" class="linkbtn" id="authForgot" data-i18n="forgot">Забыли пароль?</button>
+    </form>
+  </div>
+</div>
+<div id="lbModal" class="modal hidden">
+  <div class="box lb-box">
+    <button class="ghost modal-close" type="button" data-close="lbModal" data-i18n-aria="close" aria-label="Закрыть">✕</button>
+    <h2 style="margin:0 0 10px" data-i18n="lbTitle">Рейтинг игроков</h2>
+    <div class="auth-tabs"><button type="button" id="lbTabPoker" class="on" data-i18n="catPoker">♠ Покер</button><button type="button" id="lbTabBj" data-i18n="catBj">♣ Блэкджек</button></div>
+    <div id="lbList"></div>
+  </div>
+</div>
 <div id="victory" class="hidden"><canvas id="confetti"></canvas><div class="vbox" id="vbox"></div></div>
 <div id="overlay" class="hidden">
   <div class="box" style="text-align:center">
@@ -778,6 +855,16 @@ const ICE_SERVERS = [
 ];
 if (TURN.urls && TURN.urls.length) ICE_SERVERS.push({ urls: TURN.urls, username: TURN.username, credential: TURN.credential });
 const PEER_PREFIX = 'poker-druzya-';
+/* Настройки Firebase для аккаунтов и рейтинга: Firebase Console → Project settings → Your apps → Web app → firebaseConfig.
+   Пока apiKey пустой, аккаунтов нет и игра работает как раньше. */
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyAUTLkYsSrul9h_Lg0mhDjahpihebUqayQ',
+  authDomain: 'poker-52d26.firebaseapp.com',
+  projectId: 'poker-52d26',
+  storageBucket: 'poker-52d26.firebasestorage.app',
+  messagingSenderId: '184956130624',
+  appId: '1:184956130624:web:6049e2e106ea725b99d6a5',
+};
 
 /*ENGINE-START*/
 /* =====================================================================
@@ -1470,6 +1557,7 @@ class PokerTable {
       players: this.players.map(p => ({
         id: p.id, name: p.name, stack: p.stack, bet: p.bet, connected: p.connected, sitOut: p.sitOut,
         inHand: p.inHand, folded: p.folded, allIn: p.allIn, last: p.last, isHost: p.id === 'host', isBot: !!p.isBot, botLevel: p.botLevel || null,
+        uid: p.uid || null, rating: p.ratings && typeof p.ratings[this.settings.game === 'bj' ? 'bj' : 'poker'] === 'number' ? p.ratings[this.settings.game === 'bj' ? 'bj' : 'poker'] : null,
         cardCount: p.hole.length,
         // в блэкджеке первая карта скрыта, остальные видны всем
         cards: (p.id === id || p.show) ? p.hole.slice() : (this.settings.game === 'bj' && p.hole.length ? p.hole.map((c, i) => i === 0 ? null : c) : null),
@@ -1543,6 +1631,14 @@ const I18N = {
       '⚖️ Равные очки — банк делится. Если перебрали все — анте возвращается.',
     ],
     addBot: '🤖 Добавить бота:', lvEasy: 'Лёгкий', lvNormal: 'Нормальный', lvHard: 'Сложный', botTag: 'бот', rmBot: 'Убрать бота', 'e.botsLobby': 'Ботов можно добавлять и убирать только в лобби',
+    accHint: 'Войди, чтобы получать рейтинг. Играть можно и без аккаунта.', login: 'Войти', register: 'Регистрация', logout: 'Выйти из аккаунта', leaderboard: '🏆 Рейтинг',
+    email: 'Почта', password: 'Пароль (минимум 6 символов)', accName: 'Имя в игре', forgot: 'Забыли пароль?', resetSent: 'Письмо для сброса пароля отправлено на {email}',
+    accNamePrompt: 'Придумай имя для аккаунта — его увидят другие игроки.', save: 'Сохранить', catPoker: '♠ Покер', catBj: '♣ Блэкджек',
+    lbTitle: 'Рейтинг игроков', lbEmpty: 'Пока никто не сыграл рейтинговую игру', lbLoading: 'Загрузка…', lbErr: 'Не удалось загрузить рейтинг', lbGames: 'Игр: {n} · побед: {w}',
+    tier_bronze: 'Бронза', tier_silver: 'Серебро', tier_gold: 'Золото', tier_plat: 'Платина', tier_diamond: 'Алмаз', ratingSaveErr: 'Не удалось сохранить рейтинг',
+    'ae.acc/name-short': 'Имя — минимум 2 символа', 'ae.acc/name-taken': 'Это имя уже занято', 'ae.auth/email-already-in-use': 'Эта почта уже зарегистрирована',
+    'ae.auth/invalid-email': 'Неверный адрес почты', 'ae.auth/weak-password': 'Пароль — минимум 6 символов', 'ae.auth/invalid-credential': 'Неверная почта или пароль',
+    'ae.auth/too-many-requests': 'Слишком много попыток, попробуй позже', 'ae.auth/network-request-failed': 'Нет связи с сервером', 'ae.unknown': 'Что-то пошло не так ({e})',
     vYouWin: 'ПОБЕДА!', vWinner: 'Победитель', vSub: 'забирает все фишки за столом', vChips: 'фишек', vOutOnHand: 'выбыл на раздаче #{n}', vOut: 'выбыл',
     vHands: 'Раздач сыграно: <b>{n}</b>', vBigPot: 'Самый большой банк: <b>{n}</b> — {name}', vBestHand: 'Лучшая комбинация: <b>{hand}</b> — {name}',
     vChart: 'Фишки по ходу игры', vTipHand: 'Раздача #{n}', vTipStart: 'Старт', vNewGame: 'Новая игра', vWaitHost: 'Ждём, пока хост начнёт новую игру…', 'l.newGame': 'Новая игра! Стек {stack}, блайнды {sb}/{bb}', 'e.notOver': 'Игра ещё не закончилась',
@@ -1621,6 +1717,14 @@ const I18N = {
       '⚖️ Equal points split the pot. If everyone busts, the antes are returned.',
     ],
     addBot: '🤖 Add a bot:', lvEasy: 'Easy', lvNormal: 'Normal', lvHard: 'Hard', botTag: 'bot', rmBot: 'Remove bot', 'e.botsLobby': 'Bots can only be added or removed in the lobby',
+    accHint: 'Sign in to earn a rating. You can also play without an account.', login: 'Log in', register: 'Sign up', logout: 'Log out', leaderboard: '🏆 Leaderboard',
+    email: 'Email', password: 'Password (at least 6 characters)', accName: 'Display name', forgot: 'Forgot password?', resetSent: 'A password reset email was sent to {email}',
+    accNamePrompt: 'Choose a display name for your account — other players will see it.', save: 'Save', catPoker: '♠ Poker', catBj: '♣ Blackjack',
+    lbTitle: 'Leaderboard', lbEmpty: 'No rated games yet', lbLoading: 'Loading…', lbErr: "Couldn't load the leaderboard", lbGames: 'Games: {n} · wins: {w}',
+    tier_bronze: 'Bronze', tier_silver: 'Silver', tier_gold: 'Gold', tier_plat: 'Platinum', tier_diamond: 'Diamond', ratingSaveErr: "Couldn't save your rating",
+    'ae.acc/name-short': 'The name needs at least 2 characters', 'ae.acc/name-taken': 'That name is already taken', 'ae.auth/email-already-in-use': 'This email is already registered',
+    'ae.auth/invalid-email': 'Invalid email address', 'ae.auth/weak-password': 'The password needs at least 6 characters', 'ae.auth/invalid-credential': 'Wrong email or password',
+    'ae.auth/too-many-requests': 'Too many attempts, try again later', 'ae.auth/network-request-failed': 'No connection to the server', 'ae.unknown': 'Something went wrong ({e})',
     vYouWin: 'VICTORY!', vWinner: 'Winner', vSub: 'takes all the chips at the table', vChips: 'chips', vOutOnHand: 'out on hand #{n}', vOut: 'out',
     vHands: 'Hands played: <b>{n}</b>', vBigPot: 'Biggest pot: <b>{n}</b> — {name}', vBestHand: 'Best hand: <b>{hand}</b> — {name}',
     vChart: 'Chips over the game', vTipHand: 'Hand #{n}', vTipStart: 'Start', vNewGame: 'New game', vWaitHost: 'Waiting for the host to start a new game…', 'l.newGame': 'New game! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': "The game isn't over yet",
@@ -1699,6 +1803,14 @@ const I18N = {
       '⚖️ Gelijke punten — de pot wordt gedeeld. Is iedereen dood, dan gaan de antes terug.',
     ],
     addBot: '🤖 Bot toevoegen:', lvEasy: 'Makkelijk', lvNormal: 'Normaal', lvHard: 'Moeilijk', botTag: 'bot', rmBot: 'Bot verwijderen', 'e.botsLobby': 'Bots kunnen alleen in de lobby worden toegevoegd of verwijderd',
+    accHint: 'Log in om een rating te verdienen. Spelen kan ook zonder account.', login: 'Inloggen', register: 'Registreren', logout: 'Uitloggen', leaderboard: '🏆 Ranglijst',
+    email: 'E-mail', password: 'Wachtwoord (minstens 6 tekens)', accName: 'Spelersnaam', forgot: 'Wachtwoord vergeten?', resetSent: 'Er is een e-mail om je wachtwoord te herstellen gestuurd naar {email}',
+    accNamePrompt: 'Kies een spelersnaam voor je account — andere spelers zien hem.', save: 'Opslaan', catPoker: '♠ Poker', catBj: '♣ Blackjack',
+    lbTitle: 'Ranglijst', lbEmpty: 'Nog geen gespeelde ratingpotjes', lbLoading: 'Laden…', lbErr: 'De ranglijst kon niet worden geladen', lbGames: 'Potjes: {n} · gewonnen: {w}',
+    tier_bronze: 'Brons', tier_silver: 'Zilver', tier_gold: 'Goud', tier_plat: 'Platina', tier_diamond: 'Diamant', ratingSaveErr: 'Je rating kon niet worden opgeslagen',
+    'ae.acc/name-short': 'De naam moet minstens 2 tekens hebben', 'ae.acc/name-taken': 'Deze naam is al bezet', 'ae.auth/email-already-in-use': 'Dit e-mailadres is al geregistreerd',
+    'ae.auth/invalid-email': 'Ongeldig e-mailadres', 'ae.auth/weak-password': 'Het wachtwoord moet minstens 6 tekens hebben', 'ae.auth/invalid-credential': 'Verkeerd e-mailadres of wachtwoord',
+    'ae.auth/too-many-requests': 'Te veel pogingen, probeer het later opnieuw', 'ae.auth/network-request-failed': 'Geen verbinding met de server', 'ae.unknown': 'Er ging iets mis ({e})',
     vYouWin: 'GEWONNEN!', vWinner: 'Winnaar', vSub: 'pakt alle fiches aan tafel', vChips: 'fiches', vOutOnHand: 'uitgeschakeld in hand #{n}', vOut: 'uitgeschakeld',
     vHands: 'Gespeelde handen: <b>{n}</b>', vBigPot: 'Grootste pot: <b>{n}</b> — {name}', vBestHand: 'Beste hand: <b>{hand}</b> — {name}',
     vChart: 'Fiches tijdens het spel', vTipHand: 'Hand #{n}', vTipStart: 'Start', vNewGame: 'Nieuw spel', vWaitHost: 'Wachten tot de host een nieuw spel start…', 'l.newGame': 'Nieuw spel! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': 'Het spel is nog niet afgelopen',
@@ -1881,6 +1993,7 @@ function hostCreate(name, attempt = 0) {
     isHost = true; myId = 'host';
     table = new PokerTable({ onChange: queueBroadcast });
     const res = table.addPlayer('host', name);
+    res.player.uid = ACC.user && ACC.profile ? ACC.user.uid : null; res.player.ratings = myRatings();
     setAvatar(res.player.name, myAvatar);
     window.addEventListener('beforeunload', e => { if (table && table.phase !== 'lobby') { e.preventDefault(); e.returnValue = ''; } });
   });
@@ -1904,6 +2017,10 @@ function hostOnData(c, d) {
     const res = table.addPlayer(pid, d.name);
     if (res.error) { c.send({ t: 'err', e: res.error }); setTimeout(() => c.close(), 500); return; }
     conns.set(res.player.id, c);
+    // аккаунт игрока (если он вошёл): uid — чтобы записать рейтинг, ratings — для значка ранга
+    res.player.uid = typeof d.uid === 'string' && d.uid.length < 128 ? d.uid : null;
+    const rt = d.ratings && typeof d.ratings === 'object' ? d.ratings : null;
+    res.player.ratings = rt && res.player.uid ? { poker: Number(rt.poker) || RATING_START, bj: Number(rt.bj) || RATING_START } : null;
     c.send({ t: 'welcome', id: res.player.id, code: roomCode });
     // фото: новичку — все фото стола, остальным — фото новичка
     setAvatar(res.player.name, d.avatar);
@@ -1975,6 +2092,7 @@ function queueBroadcast() {
     }
     render(table.viewFor('host'));
     scheduleBots();
+    if (table.phase === 'gameover') hostRateGame();
   }, 0);
 }
 
@@ -1987,13 +2105,14 @@ function clientJoin(name, code) {
   const failTimer = setTimeout(() => { if (!welcomed) { setMenuBusy(false); menuStatus(t('connFail'), true); try { peer.destroy(); } catch (e) {} } }, 15000);
   peer.on('open', () => {
     conn = peer.connect(PEER_PREFIX + code, { reliable: true });
-    conn.on('open', () => conn.send({ t: 'join', name, avatar: myAvatar }));
+    conn.on('open', () => conn.send({ t: 'join', name, avatar: myAvatar, uid: ACC.user && ACC.profile ? ACC.user.uid : null, ratings: myRatings() }));
     conn.on('data', d => {
       if (!d || typeof d !== 'object') return;
       if (d.t === 'welcome') { welcomed = true; clearTimeout(failTimer); myId = d.id; }
       else if (d.t === 'err') { clearTimeout(failTimer); setMenuBusy(false); menuStatus(errText(d.e), true); }
       else if (d.t === 'state') render(d.v);
       else if (d.t === 'toast') toast(errText(d.e));
+      else if (d.t === 'ratings') onRatings(d);
       else if (d.t === 'avatars' && d.map && typeof d.map === 'object') { for (const k of Object.keys(d.map)) setAvatar(k, d.map[k]); if (view) render(view); }
       else if (d.t === 'avatar' && typeof d.name === 'string') { setAvatar(d.name, d.data); if (view) render(view); }
     });
@@ -2152,6 +2271,7 @@ function muckAll() {
 let localTurnDeadline = 0, localNextDeadline = 0;
 function render(v) {
   view = v;
+  if (v.phase !== 'gameover') lastRatings = null;
   botNames = new Set(v.players.filter(p => p.isBot).map(p => p.name));
   if (v.phase !== 'gameover' && !$('#victory').classList.contains('hidden')) { $('#victory').classList.add('hidden'); stopConfetti(); victoryShownFor = ''; }
   localTurnDeadline = v.turnLeft ? Date.now() + v.turnLeft : 0;
@@ -2169,7 +2289,7 @@ function renderLobby(v) {
   }
   const LV = { easy: 'lvEasy', normal: 'lvNormal', hard: 'lvHard' };
   $('#lobbyPlayers').innerHTML = v.players.map(p =>
-    `<li style="${animStyle(anim('lp-' + p.id, 'slideIn', 450))}"><span>${avaHTML(p.name, 'lav')}${esc(p.name)}${p.id === myId ? ` <small>${t('you')}</small>` : ''}</span>
+    `<li style="${animStyle(anim('lp-' + p.id, 'slideIn', 450))}"><span>${avaHTML(p.name, 'lav')}${esc(p.name)}${p.rating != null ? tierBadge(p.rating, true) : ''}${p.id === myId ? ` <small>${t('you')}</small>` : ''}</span>
       <small>${p.isHost ? t('host') : p.isBot ? `🤖 ${t('botTag')} · ${t(LV[p.botLevel] || 'lvNormal')}` : t('player')}${p.isBot && isHost ? ` <button class="rmbot" data-rm="${esc(p.id)}" type="button" title="${t('rmBot')}">✕</button>` : ''}</small></li>`).join('')
     + (isHost && v.players.length < 9 ? `<li class="addbots"><span>${t('addBot')}</span><span class="botbtns">
         <button type="button" data-bot="easy">${t('lvEasy')}</button><button type="button" data-bot="normal">${t('lvNormal')}</button><button type="button" data-bot="hard">${t('lvHard')}</button></span></li>` : '');
@@ -2464,7 +2584,7 @@ function renderGame(v) {
       ${ava}
       <div class="act ${ac}" style="${lblStyle}">${label ? esc(label) : '&nbsp;'}</div>
       <div class="plate" style="${plateStyle}">
-        ${avaHTML(p.name, 'mini')}<div class="nm">${esc(p.name)}${p.isHost ? ' 👑' : ''}</div>
+        ${avaHTML(p.name, 'mini')}<div class="nm">${p.rating != null ? tierBadge(p.rating) : ''}${esc(p.name)}${p.isHost ? ' 👑' : ''}</div>
         <div class="stk" data-tw="s-${esc(p.id)}">${fmt(tweenNow('s-' + p.id, p.stack))}</div>${timer}
       </div>${hn}</div>`;
     if (p.bet > 0) {
@@ -2742,6 +2862,7 @@ function cropFinish() {
   const s = c.base * c.z;
   g.drawImage(c.img, -c.ox / s, -c.oy / s, c.S / s, c.S / s, 0, 0, OUT, OUT);
   myAvatar = cv.toDataURL('image/jpeg', 0.86);
+  accSaveAvatar();
   lsSet('poker_avatar', myAvatar);
   $('#cropper').classList.add('hidden');
   updateMenuAva();
@@ -2764,7 +2885,7 @@ function cropFinish() {
   $('#avaBtn').addEventListener('click', () => $('#avaFile').click());
   $('#myAva').addEventListener('click', () => $('#avaFile').click());
   $('#avaFile').addEventListener('change', e => { openCropper(e.target.files[0]); e.target.value = ''; });
-  $('#avaDel').addEventListener('click', () => { myAvatar = ''; lsSet('poker_avatar', ''); updateMenuAva(); });
+  $('#avaDel').addEventListener('click', () => { myAvatar = ''; lsSet('poker_avatar', ''); updateMenuAva(); accSaveAvatar(); });
   const ava = $('#myAva');
   ava.addEventListener('dragover', e => { e.preventDefault(); ava.classList.add('drop'); });
   ava.addEventListener('dragleave', () => ava.classList.remove('drop'));
@@ -2995,7 +3116,7 @@ function renderVictory(v, me) {
   const medals = ['🥇', '🥈', '🥉'];
   const rows = v.places.map((pl, i) => `<div class="vplace${i === 0 ? ' first' : ''}" style="animation-delay:${1.2 + i * 0.12}s">
       <div class="med">${medals[i] || (i + 1) + '.'}</div>${avaHTML(pl.name)}<div class="vn"><i class="sw" style="background:${seriesColor(v, pl.name)}"></i>${esc(pl.name)}</div>
-      <div class="r">${pl.stack ? fmt(pl.stack) + ' ' + t('vChips') : (pl.hand ? t('vOutOnHand', { n: pl.hand }) : t('vOut'))}</div></div>`).join('');
+      <div class="r">${pl.stack ? fmt(pl.stack) + ' ' + t('vChips') : (pl.hand ? t('vOutOnHand', { n: pl.hand }) : t('vOut'))}${ratingDeltaHTML(pl.name)}</div></div>`).join('');
   const st = v.stats || {};
   let stats = `<div>${t('vHands', { n: v.handNo })}</div>`;
   if (st.bigPot) stats += `<div>${t('vBigPot', { n: st.bigPot.n, name: esc(st.bigPot.name) })}</div>`;
@@ -3064,6 +3185,286 @@ function stopConfetti() {
   const cv = $('#confetti'); cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
 }
 
+/* =====================================================================
+   АККАУНТЫ И РЕЙТИНГ (Firebase: вход по почте, профили и рейтинг в Firestore)
+   Без настроек Firebase игра работает как раньше — просто без аккаунтов.
+   ===================================================================== */
+const ACC = { on: false, auth: null, db: null, user: null, profile: null, registering: false };
+const RATING_START = 1000;
+const BOT_RATING = { easy: 800, normal: 1000, hard: 1200 };
+const rcat = game => game === 'bj' ? 'bj' : 'poker';            // холдем и Омаха — общий покерный рейтинг
+const TIERS = [[1500, 'diamond'], [1300, 'plat'], [1100, 'gold'], [900, 'silver'], [-Infinity, 'bronze']];
+function tierOf(r) { return TIERS.find(([min]) => r >= min)[1]; }
+function tierBadge(r, withText) {
+  if (typeof r !== 'number') return '';
+  const k = tierOf(r);
+  return `<span class="tier t-${k}" title="${t('tier_' + k)} · ${fmt(r)}"><i></i>${withText ? `${t('tier_' + k)} · ${fmt(r)}` : ''}</span>`;
+}
+function myRatings() { return ACC.profile && ACC.profile.ratings ? ACC.profile.ratings : null; }
+function accErrText(e) {
+  const code = (e && e.code) || '';
+  const map = { 'auth/wrong-password': 'auth/invalid-credential', 'auth/user-not-found': 'auth/invalid-credential', 'auth/invalid-login-credentials': 'auth/invalid-credential', 'auth/missing-password': 'auth/weak-password' };
+  const k = 'ae.' + (map[code] || code);
+  const s = I18N[LANG][k] || I18N.ru[k];
+  return s || t('ae.unknown', { e: code || (e && e.message) || String(e) });
+}
+
+function accInit() {
+  if (!FIREBASE_CONFIG.apiKey || typeof firebase === 'undefined') { updateAccountUI(); return; }
+  try {
+    if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    ACC.auth = firebase.auth(); ACC.db = firebase.firestore(); ACC.on = true;
+  } catch (e) { console.warn('Firebase:', e); updateAccountUI(); return; }
+  ACC.auth.onAuthStateChanged(async u => {
+    ACC.user = u; ACC.profile = null;
+    if (u) { try { await accLoadProfile(); } catch (e) { console.warn(e); } }
+    updateAccountUI();
+  });
+  updateAccountUI();
+}
+async function accLoadProfile() {
+  if (!ACC.user) return;
+  const s = await ACC.db.collection('users').doc(ACC.user.uid).get();
+  ACC.profile = s.exists ? s.data() : null;
+  if (ACC.profile) {
+    $('#nameIn').value = ACC.profile.name; lsSet('poker_name', ACC.profile.name);
+    if (isAvatar(ACC.profile.avatar)) { myAvatar = ACC.profile.avatar; lsSet('poker_avatar', myAvatar); }
+    else if (myAvatar) ACC.db.collection('users').doc(ACC.user.uid).update({ avatar: myAvatar }).catch(() => {});
+    updateMenuAva();
+  }
+}
+async function accCreateProfile(name) {
+  name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 16);
+  if (name.length < 2) throw { code: 'acc/name-short' };
+  const db = ACC.db, uid = ACC.user.uid, lower = name.toLowerCase();
+  await db.runTransaction(async tx => {
+    const nd = db.collection('names').doc(lower);
+    const s = await tx.get(nd);
+    if (s.exists) throw { code: 'acc/name-taken' };
+    tx.set(nd, { uid });
+    tx.set(db.collection('users').doc(uid), {
+      name, avatar: myAvatar || '', ratings: { poker: RATING_START, bj: RATING_START },
+      games: { poker: 0, bj: 0 }, wins: { poker: 0, bj: 0 }, created: Date.now(), updated: Date.now(),
+    });
+  });
+  await accLoadProfile();
+}
+async function accRegister(name, email, pass) {
+  name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 16);
+  if (name.length < 2) throw { code: 'acc/name-short' };
+  if ((await ACC.db.collection('names').doc(name.toLowerCase()).get()).exists) throw { code: 'acc/name-taken' };
+  ACC.registering = true;
+  try {
+    const cred = await ACC.auth.createUserWithEmailAndPassword(email, pass);
+    ACC.user = cred.user;
+    await accCreateProfile(name);
+  } finally { ACC.registering = false; updateAccountUI(); }
+}
+// Фото профиля храним в аккаунте, чтобы оно было на любом компьютере
+function accSaveAvatar() {
+  if (ACC.on && ACC.user && ACC.profile) {
+    ACC.profile.avatar = myAvatar || '';
+    ACC.db.collection('users').doc(ACC.user.uid).update({ avatar: myAvatar || '', updated: Date.now() }).catch(e => console.warn(e));
+  }
+}
+
+/* ---- блок аккаунта в меню ---- */
+function updateAccountUI() {
+  const box = $('#accBox');
+  document.querySelectorAll('.lbBtn').forEach(b => b.classList.toggle('hidden', !ACC.on));
+  if (!ACC.on) { box.classList.add('hidden'); $('#nameIn').disabled = false; return; }
+  box.classList.remove('hidden');
+  const nameIn = $('#nameIn');
+  if (!ACC.user) {
+    nameIn.disabled = false;
+    box.innerHTML = `<div class="acc-hint">${t('accHint')}</div>
+      <div class="acc-btns"><button type="button" class="primary small" data-acc="login">${t('login')}</button>
+      <button type="button" class="ghost small" data-acc="register">${t('register')}</button>
+      <button type="button" class="ghost small lbBtn" data-acc="lb">${t('leaderboard')}</button></div>`;
+  } else if (!ACC.profile) {
+    nameIn.disabled = false;
+    if (ACC.registering) { box.innerHTML = `<div class="acc-hint">${t('lbLoading')}</div>`; return; }
+    box.innerHTML = `<div class="acc-hint">${t('accNamePrompt')}</div>
+      <div class="row"><input id="accNameIn" maxlength="16" value="${esc(nameIn.value)}"><button type="button" class="primary" data-acc="savename">${t('save')}</button></div>
+      <div class="acc-err" id="accNameErr"></div>
+      <div class="acc-btns"><button type="button" class="ghost small" data-acc="logout">${t('logout')}</button></div>`;
+  } else {
+    const r = ACC.profile.ratings || {};
+    nameIn.disabled = true; nameIn.value = ACC.profile.name;
+    box.innerHTML = `<div class="acc-me">
+        <div class="acc-name">👤 <b>${esc(ACC.profile.name)}</b></div>
+        <div class="acc-r"><span>${t('catPoker')}</span>${tierBadge(r.poker ?? RATING_START, true)}</div>
+        <div class="acc-r"><span>${t('catBj')}</span>${tierBadge(r.bj ?? RATING_START, true)}</div>
+      </div>
+      <div class="acc-btns"><button type="button" class="ghost small lbBtn" data-acc="lb">${t('leaderboard')}</button>
+      <button type="button" class="ghost small" data-acc="logout">${t('logout')}</button></div>`;
+  }
+  box.querySelectorAll('[data-acc]').forEach(b => b.addEventListener('click', () => accAction(b.dataset.acc)));
+}
+async function accAction(a) {
+  if (a === 'login' || a === 'register') openAuth(a);
+  else if (a === 'lb') openLeaderboard();
+  else if (a === 'logout') { try { await ACC.auth.signOut(); } catch (e) {} $('#nameIn').disabled = false; }
+  else if (a === 'savename') {
+    const err = $('#accNameErr');
+    try { err.textContent = ''; await accCreateProfile($('#accNameIn').value); updateAccountUI(); }
+    catch (e) { err.textContent = accErrText(e); }
+  }
+}
+
+/* ---- окно входа и регистрации ---- */
+let authMode = 'login';
+function openAuth(mode) {
+  authMode = mode;
+  $('#authErr').textContent = ''; $('#authOk').textContent = '';
+  renderAuth();
+  $('#authModal').classList.remove('hidden');
+  setTimeout(() => (authMode === 'register' ? $('#authName') : $('#authEmail')).focus(), 50);
+}
+function renderAuth() {
+  $('#authTabLogin').classList.toggle('on', authMode === 'login');
+  $('#authTabReg').classList.toggle('on', authMode === 'register');
+  $('#authNameRow').classList.toggle('hidden', authMode !== 'register');
+  $('#authForgot').classList.toggle('hidden', authMode !== 'login');
+  $('#authSubmit').textContent = authMode === 'login' ? t('login') : t('register');
+  if (authMode === 'register' && !$('#authName').value) $('#authName').value = $('#nameIn').value.trim();
+}
+function closeAuth() { $('#authModal').classList.add('hidden'); }
+async function submitAuth(e) {
+  e.preventDefault();
+  const err = $('#authErr'), btn = $('#authSubmit');
+  err.textContent = ''; $('#authOk').textContent = ''; btn.disabled = true;
+  const email = $('#authEmail').value.trim(), pass = $('#authPass').value;
+  try {
+    if (authMode === 'login') await ACC.auth.signInWithEmailAndPassword(email, pass);
+    else await accRegister($('#authName').value, email, pass);
+    closeAuth(); $('#authPass').value = '';
+  } catch (ex) { err.textContent = accErrText(ex); }
+  finally { btn.disabled = false; }
+}
+async function forgotPassword() {
+  const email = $('#authEmail').value.trim(), err = $('#authErr'), ok = $('#authOk');
+  err.textContent = ''; ok.textContent = '';
+  if (!email) { err.textContent = t('ae.auth/invalid-email'); return; }
+  try { await ACC.auth.sendPasswordResetEmail(email); ok.textContent = t('resetSent', { email }); }
+  catch (ex) { err.textContent = accErrText(ex); }
+}
+
+/* ---- таблица лидеров ---- */
+let lbCat = 'poker';
+async function openLeaderboard(cat) {
+  if (!ACC.on) return;
+  if (cat) lbCat = cat;
+  $('#lbModal').classList.remove('hidden');
+  $('#lbTabPoker').classList.toggle('on', lbCat === 'poker');
+  $('#lbTabBj').classList.toggle('on', lbCat === 'bj');
+  const list = $('#lbList');
+  list.innerHTML = `<div class="lb-msg">${t('lbLoading')}</div>`;
+  try {
+    const snap = await ACC.db.collection('users').orderBy('ratings.' + lbCat, 'desc').limit(100).get();
+    const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.games && u.games[lbCat] > 0).slice(0, 50);
+    if (!rows.length) { list.innerHTML = `<div class="lb-msg">${t('lbEmpty')}</div>`; return; }
+    const myUid = ACC.user ? ACC.user.uid : '';
+    list.innerHTML = rows.map((u, i) => {
+      const r = u.ratings[lbCat], av = isAvatar(u.avatar) ? `<div class="ava lav photo"><img src="${u.avatar}" alt=""></div>` : `<div class="ava lav" style="--h:${nameHue(u.name)}">${esc(initials(u.name))}</div>`;
+      return `<div class="lb-row${u.id === myUid ? ' me' : ''}" style="animation-delay:${i * 0.03}s">
+        <div class="lb-pos">${['🥇', '🥈', '🥉'][i] || i + 1}</div>${av}
+        <div class="lb-name"><b>${esc(u.name)}</b><small>${t('lbGames', { n: u.games[lbCat] || 0, w: (u.wins && u.wins[lbCat]) || 0 })}</small></div>
+        ${tierBadge(r, true)}</div>`;
+    }).join('');
+  } catch (e) { console.warn(e); list.innerHTML = `<div class="lb-msg">${t('lbErr')}</div>`; }
+}
+
+/* ---- Эло для нескольких игроков ----
+   Каждый сравнивается с каждым: место выше — победа над этим соперником.
+   Изменение = K / (N−1) × Σ (результат − ожидание). Первые 10 игр K больше, чтобы новичок быстрее нашёл свой уровень. */
+function eloMulti(list) {
+  const n = list.length;
+  for (const a of list) {
+    let sum = 0;
+    for (const b of list) {
+      if (a === b) continue;
+      const exp = 1 / (1 + Math.pow(10, (b.r - a.r) / 400));
+      const res = a.place < b.place ? 1 : a.place > b.place ? 0 : 0.5;
+      sum += res - exp;
+    }
+    const K = (a.games || 0) < 10 ? 48 : 32;
+    a.delta = n > 1 ? Math.round(K * sum / (n - 1)) : 0;
+    a.after = a.r + a.delta;
+  }
+  return list;
+}
+// Хост после конца игры считает изменения и рассылает всем; каждый записывает только свой рейтинг
+let ratedKey = '', lastRatings = null, ratingWrittenKey = '';
+async function hostRateGame() {
+  if (!isHost || !table || table.phase !== 'gameover' || !ACC.on) return;
+  const key = table.handNo + '|' + table.history.length + '|' + (table.places()[0] || {}).name;
+  if (key === ratedKey) return;
+  ratedKey = key;
+  const players = table.players;
+  if (!players.some(p => p.uid)) return;           // никто не вошёл в аккаунт — рейтинг не считаем
+  const cat = rcat(table.settings.game);
+  const list = table.places().map((pl, idx) => {
+    const p = players.find(q => q.name === pl.name) || {};
+    return { name: pl.name, place: idx, uid: p.uid || null, bot: p.isBot ? p.botLevel : null };
+  });
+  for (const it of list) {
+    it.r = RATING_START; it.games = 0;
+    if (it.bot) it.r = BOT_RATING[it.bot] || RATING_START;
+    else if (it.uid) {
+      try { const s = await ACC.db.collection('users').doc(it.uid).get(); const d = s.exists ? s.data() : null;
+        if (d && d.ratings && typeof d.ratings[cat] === 'number') it.r = d.ratings[cat];
+        if (d && d.games) it.games = d.games[cat] || 0; } catch (e) { console.warn(e); }
+    }
+  }
+  eloMulti(list);
+  const msg = { t: 'ratings', key, cat, list: list.map(x => ({ name: x.name, uid: x.uid, place: x.place, before: x.r, after: x.after, delta: x.delta, rated: !!x.uid })) };
+  for (const it of list) { const p = players.find(q => q.name === it.name); if (p && p.uid) { p.ratings = p.ratings || {}; p.ratings[cat] = it.after; } }
+  for (const c of conns.values()) if (c && c.open) c.send(msg);
+  onRatings(msg);
+  queueBroadcast();
+}
+// У каждого игрока: показать изменения и записать свой новый рейтинг в аккаунт
+async function onRatings(msg) {
+  if (!msg || !Array.isArray(msg.list)) return;
+  lastRatings = msg; victoryKey = '';
+  if (view) render(view);
+  if (!ACC.on || !ACC.user || !ACC.profile || ratingWrittenKey === msg.key) return;
+  const me = msg.list.find(x => x.uid === ACC.user.uid);
+  if (!me || !me.rated) return;
+  ratingWrittenKey = msg.key;
+  const cat = msg.cat === 'bj' ? 'bj' : 'poker';
+  const pr = ACC.profile;
+  const games = ((pr.games && pr.games[cat]) || 0) + 1, wins = ((pr.wins && pr.wins[cat]) || 0) + (me.place === 0 ? 1 : 0);
+  // ограничение, как в правилах базы: не больше ±48 за игру
+  const cur = (pr.ratings && pr.ratings[cat]) ?? RATING_START;
+  const after = cur + Math.max(-48, Math.min(48, me.after - cur));
+  try {
+    await ACC.db.collection('users').doc(ACC.user.uid).update({ ['ratings.' + cat]: after, ['games.' + cat]: games, ['wins.' + cat]: wins, updated: Date.now() });
+    pr.ratings = { ...(pr.ratings || {}), [cat]: after }; pr.games = { ...(pr.games || {}), [cat]: games }; pr.wins = { ...(pr.wins || {}), [cat]: wins };
+    updateAccountUI();
+  } catch (e) { console.warn('rating save', e); toast(t('ratingSaveErr')); }
+}
+function ratingDeltaHTML(name) {
+  if (!lastRatings || !view || view.phase !== 'gameover') return '';
+  const x = lastRatings.list.find(i => i.name === name);
+  if (!x || !x.rated) return '';
+  const cls = x.delta > 0 ? 'up' : x.delta < 0 ? 'down' : 'eq';
+  return `<span class="rdelta ${cls}">${fmt(x.after)} ${x.delta > 0 ? '+' + x.delta + ' ▲' : x.delta < 0 ? x.delta + ' ▼' : '±0'}</span>`;
+}
+
+/* ---- события окон аккаунта ---- */
+$('#authTabLogin').addEventListener('click', () => { authMode = 'login'; renderAuth(); });
+$('#authTabReg').addEventListener('click', () => { authMode = 'register'; renderAuth(); });
+$('#authForm').addEventListener('submit', submitAuth);
+$('#authForgot').addEventListener('click', forgotPassword);
+$('#lbTabPoker').addEventListener('click', () => openLeaderboard('poker'));
+$('#lbTabBj').addEventListener('click', () => openLeaderboard('bj'));
+document.querySelectorAll('.lbBtn').forEach(b => b.addEventListener('click', () => openLeaderboard()));
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => $('#' + b.dataset.close).classList.add('hidden')));
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); }));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); });
+
 /* ---- события ---- */
 $('#nameIn').value = lsGet('poker_name');
 updateMenuAva();
@@ -3090,10 +3491,12 @@ function applyLang(lang) {
   $('#menuStatus').textContent = '';
   if (!$('#combos').classList.contains('hidden')) renderCombos();
   if (view) render(view);
+  if (typeof updateAccountUI === 'function') { updateAccountUI(); renderAuth(); if (!$('#lbModal').classList.contains('hidden')) openLeaderboard(); }
 }
 document.querySelectorAll('#langBar .lang').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.lang)));
 $('#langSel').addEventListener('change', e => applyLang(e.target.value));
 applyLang(LANG);
+accInit();
 (() => {
   const m = /[?&#]room=([A-Za-z0-9]{5})/.exec(location.search + location.hash);
   if (m) $('#codeIn').value = m[1].toUpperCase();
