@@ -2209,8 +2209,12 @@ class PokerTable {
     this.history.push({ h: hand, s });
     if (this.history.length > 2000) this.history.splice(1, 1);
   }
+  // у каждой партии свой ключ — по нему рейтинг начисляется ровно один раз
+  markGame() { this.gameSeq = (this.gameSeq || 0) + 1; this.gameId = Date.now().toString(36) + '-' + this.gameSeq + '-' + Math.random().toString(36).slice(2, 7); }
+  rateKey() { return this.gameId || ''; }
   newGame() {
     if (this.phase !== 'gameover') return 'notOver';
+    this.markGame();
     const s = this.settings;
     for (const p of this.players) { p.stack = this.noChips ? 0 : s.startStack; p.pts = 0; p.title = null; p.finish = null; }
     this.busts = []; this.stats = { bigPot: null, best: null };
@@ -2237,6 +2241,7 @@ class PokerTable {
     if (this.phase !== 'lobby') return 'alreadyRunning';
     if (this.players.length < 2) return 'need2';
     const s = this.settings;
+    this.markGame();
     for (const p of this.players) { p.stack = this.noChips ? 0 : s.startStack; p.pts = 0; p.title = null; p.finish = null; }
     if ((this.isWolf || this.isBunk) && this.players.length < 4) return 'need4';
     this.snapshot(0);
@@ -4112,7 +4117,7 @@ function hostOnData(c, d) {
     // аккаунт игрока (если он вошёл): uid — чтобы записать рейтинг, ratings — для значка ранга
     res.player.uid = typeof d.uid === 'string' && d.uid.length < 128 ? d.uid : null;
     const rt = d.ratings && typeof d.ratings === 'object' ? d.ratings : null;
-    res.player.ratings = rt && res.player.uid ? { poker: Number(rt.poker) || RATING_START, bj: Number(rt.bj) || RATING_START } : null;
+    res.player.ratings = rt && res.player.uid ? { poker: Number.isFinite(+rt.poker) ? +rt.poker : RATING_START, bj: Number.isFinite(+rt.bj) ? +rt.bj : RATING_START } : null;
     c.send({ t: 'welcome', id: res.player.id, code: roomCode });
     // фото: новичку — все фото стола, остальным — фото новичка
     setAvatar(res.player.name, d.avatar);
@@ -6505,16 +6510,26 @@ async function openLeaderboard(cat) {
 }
 
 /* ---- рейтинг за места ----
-   Очки дают только призовые места, остальным ±0. Сколько мест призовые, зависит от числа игроков за столом (боты тоже считаются):
-   2 игрока — только 1-е; 3 — 1-е и 2-е; 4 и больше — 1-е, 2-е и 3-е.
+   Призовые места: 2 игрока — только 1-е; 3 — 1-е и 2-е; 4 и больше — 1-е, 2-е и 3-е (боты тоже считаются).
+   Штраф за последние места (рейтинг может уходить в минус):
+     2 игрока — последний −20…30; 3–5 — последний −15…25; 6+ — последний −20…30 и предпоследний −10…15.
+   Оборотни и Бункер (побеждает команда): победители +30…40, проигравшие −10…20.
    Сумма случайная в своём диапазоне; её выбрасывает хост один раз, поэтому у всех она одинаковая. */
 const PLACE_PRIZE = [[30, 40], [15, 20], [5, 10]];
+const TEAM_LOSS = [10, 20];
 const prizeCount = n => n >= 4 ? 3 : n === 3 ? 2 : n === 2 ? 1 : 0;
+// штраф по месту с конца: [последний, предпоследний]
+const placePenalty = n => n >= 6 ? [[20, 30], [10, 15]] : n >= 3 ? [[15, 25]] : n === 2 ? [[20, 30]] : [];
+const rollRange = ([a, b]) => a + Math.floor(Math.random() * (b - a + 1));
 function ratePlaces(list) {
-  const paid = prizeCount(list.length);
+  const n = list.length, paid = prizeCount(n), pen = placePenalty(n);
+  const team = list.some(a => a.place === 99);         // Оборотни и Бункер: только победили / проиграли
   for (const a of list) {
-    const pr = a.place < paid ? PLACE_PRIZE[a.place] : null;
-    a.delta = pr ? pr[0] + Math.floor(Math.random() * (pr[1] - pr[0] + 1)) : 0;
+    if (team) a.delta = a.place === 0 ? rollRange(PLACE_PRIZE[0]) : -rollRange(TEAM_LOSS);
+    else {
+      const fromEnd = n - 1 - a.place;
+      a.delta = a.place < paid ? rollRange(PLACE_PRIZE[a.place]) : pen[fromEnd] ? -rollRange(pen[fromEnd]) : 0;
+    }
     a.after = a.r + a.delta;
   }
   return list;
@@ -6523,7 +6538,8 @@ function ratePlaces(list) {
 let ratedKey = '', lastRatings = null, ratingWrittenKey = '';
 async function hostRateGame() {
   if (!isHost || !table || table.phase !== 'gameover' || !ACC.on) return;
-  const key = table.handNo + '|' + table.history.length + '|' + (table.places()[0] || {}).name;
+  const key = table.rateKey();
+  if (!key) return;
   if (key === ratedKey) return;
   ratedKey = key;
   const players = table.players;
