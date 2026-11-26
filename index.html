@@ -1046,6 +1046,52 @@ body.phone .vbox{padding:16px 14px;max-height:calc(100dvh - 16px);overflow-y:aut
 body.phone .vtitle{font-size:30px}
 body.phone .bk-pct b{font-size:48px}
 body.tall .bk-fin{grid-template-columns:1fr}
+/* ---- друзья и онлайн ---- */
+.odot{position:absolute;right:-1px;bottom:-1px;width:30%;height:30%;min-width:9px;min-height:9px;max-width:13px;max-height:13px;border-radius:50%;background:#3ddc6f;box-shadow:0 0 0 2px var(--panel);z-index:2}
+.odot.lobby{background:#ffc93c;animation:odotPulse 1.4s ease-in-out infinite}
+.odot.game{background:#4ea8ff}
+@keyframes odotPulse{50%{box-shadow:0 0 0 2px var(--panel),0 0 0 5px rgba(255,201,60,.35)}}
+.lav-w,.fr-ava{position:relative;width:max-content}
+.fr-box h2{padding-right:30px}
+.fr-add{display:flex;gap:8px;margin-bottom:4px}.fr-add input{flex:1;min-width:0;padding:8px 10px}
+.fr-msg{min-height:16px;font-size:12px;color:var(--muted);margin-bottom:4px}.fr-msg.err{color:#ff7a7a}
+#frBody{overflow:auto;min-height:120px}
+.fr-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 4px 6px;display:flex;align-items:center;gap:6px}
+.fr-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:10px;cursor:pointer}
+#frBody.fresh .fr-row{animation:slideIn .3s ease backwards}
+.fr-row:hover{background:rgba(255,255,255,.06)}
+.fr-row.off{opacity:.62}.fr-row.req{background:rgba(242,185,59,.1);outline:1px solid rgba(242,185,59,.35)}
+.fr-row .ava{--ava:36px;font-size:13px}
+.fr-name{display:flex;flex-direction:column;min-width:0}.fr-name b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-name small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-row.on .fr-name small{color:#6fe39a}.fr-row.lobby .fr-name small{color:#ffd35c}.fr-row.game .fr-name small{color:#86c2ff}
+.fr-btns{display:flex;gap:6px}.fr-btns button{padding:6px 10px;font-size:12px;white-space:nowrap}
+.fr-del{min-width:34px}
+.fr-err{background:rgba(255,90,90,.12);border:1px solid rgba(255,90,90,.4);color:#ffb3b3;border-radius:9px;padding:8px 10px;font-size:12px;margin:6px 0}
+.frbadge{display:inline-block;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--red);color:#fff;font:800 11px/18px system-ui,sans-serif;text-align:center;margin-left:5px;vertical-align:1px}
+.fron{color:#6fe39a;font-weight:700;font-size:11px;margin-left:3px}
+#accFriends{position:relative}
+.pfrrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 2px}
+.pon{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.pon .odot{position:static;width:9px;height:9px;min-width:9px;min-height:9px;box-shadow:none;background:#777}
+.pon.on .odot{background:#3ddc6f}.pon.lobby .odot{background:#ffc93c}.pon.game .odot{background:#4ea8ff}
+.pon.on{color:#6fe39a}.pon.lobby{color:#ffd35c}.pon.game{color:#86c2ff}
+.pon button,.pfr{padding:5px 10px;font-size:12px}
+.pfr.on{color:#6fe39a;border-color:rgba(111,227,154,.4);opacity:1}
+#frPops{position:fixed;top:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:10px;width:min(340px,calc(100vw - 24px));pointer-events:none}
+.frpop{pointer-events:auto;position:relative;overflow:hidden;background:linear-gradient(160deg,#233a2e,#16241d);border:1px solid rgba(111,227,154,.45);border-radius:14px;padding:12px 14px 12px;
+  box-shadow:0 12px 34px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.3);animation:frpopIn .45s cubic-bezier(.2,1.3,.4,1)}
+.frpop.out{animation:frpopOut .3s ease forwards}
+@keyframes frpopIn{from{opacity:0;transform:translateX(40px) scale(.94)}}
+@keyframes frpopOut{to{opacity:0;transform:translateX(40px)}}
+.frpop-row{display:flex;gap:11px;align-items:center;padding-right:18px}
+.frpop-row .ava{--ava:40px;font-size:14px;flex-shrink:0}
+.frpop-row b{display:block;font-size:14px;line-height:1.25}.frpop-row span{display:block;font-size:12px;color:#b9d6c4;margin-top:2px}
+.frpop-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}.frpop-btns button{padding:6px 12px;font-size:13px}
+.frpop-x{position:absolute;top:6px;right:6px;background:none;border:0;color:#9fb8a9;font-size:13px;padding:3px 6px;cursor:pointer}
+.frpop-bar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:#6fe39a;transform-origin:left;animation:frbar linear forwards}
+@keyframes frbar{to{transform:scaleX(0)}}
+body.phone #frPops{top:auto;bottom:12px;right:12px;left:12px;width:auto}
 </style>
 </head>
 <body>
@@ -1203,6 +1249,16 @@ body.tall .bk-fin{grid-template-columns:1fr}
     <div id="profBody"></div>
   </div>
 </div>
+<div id="frModal" class="modal hidden">
+  <div class="box lb-box fr-box">
+    <button class="ghost modal-close" type="button" data-close="frModal" data-i18n-aria="close" aria-label="Закрыть">✕</button>
+    <h2 style="margin:0 0 10px" data-i18n="frTitle">👥 Друзья</h2>
+    <form class="fr-add" id="frAddForm"><input id="frAddIn" maxlength="16" autocomplete="off" data-i18n-ph="frAddPh" placeholder="Ник игрока…"><button type="submit" class="primary small" data-i18n="frAdd">Добавить</button></form>
+    <div class="fr-msg" id="frMsg"></div>
+    <div id="frBody"></div>
+  </div>
+</div>
+<div id="frPops"></div>
 <div id="victory" class="hidden"><canvas id="confetti"></canvas><div class="vbox" id="vbox"></div></div>
 <div id="overlay" class="hidden">
   <div class="box" style="text-align:center">
@@ -3340,6 +3396,14 @@ const I18N = {
     vSubPres: 'набирает больше всех очков', vRounds: 'Раундов сыграно: <b>{n}</b>', vChartPres: 'Очки по раундам', vTipRound: 'Раунд #{n}',
     mtWinT: 'Чемпион: {game}', mtWinD: 'Больше всех побед в этом режиме среди всех игроков — {n}',
     mtDevT: 'Разработчик', mtDevD: 'Создатель Poker Extended. Если что-то сломалось — это к нему.', medalDevP: 'Разработчик игры',
+    friends: 'Друзья', frTitle: '👥 Друзья', frAddPh: 'Ник игрока…', frAdd: 'Добавить', frIn: 'Заявки в друзья', frOut: 'Ждут ответа', frList: 'Мои друзья',
+    frNone: 'Пока нет друзей. Добавь кого-нибудь по нику или из списка всех игроков.', frAccept: 'Принять', frDecline: 'Отклонить', frCancel: 'Отменить', frLater: 'Позже',
+    frRemove: 'Удалить из друзей', frSure: 'Точно?', frSent: 'Заявка отправлена: {name}', frNotFound: 'Игрок «{name}» не найден', frSelf: 'Это же ты 🙂', frAlready: 'Уже в друзьях',
+    frAdded: '{name} теперь твой друг!', frReqPop: 'хочет добавить тебя в друзья', frLobbyPop: 'Друг {name} создал лобби', frJoinQ: 'хочешь зайти?', frJoin: 'Зайти', frWait: 'заявка отправлена',
+    frLeaveFirst: 'Сначала выйди из текущей комнаты', frOnlineN: '· {n} онлайн',
+    frRules: 'Друзья пока не работают: в Firebase нужно добавить новые правила (friendReq и presence).',
+    onMenu: 'онлайн · в меню', onLobby: 'в лобби · {game} ({n}/{max})', onGame: 'играет · {game}', offNow: 'не в сети', offSeen: 'был(а) в сети {t} назад',
+    tMin: '{n} мин', tHour: '{n} ч', tDay: '{n} дн', profAddFr: 'Добавить в друзья', profReqSent: 'Заявка отправлена', profAcceptFr: 'Принять заявку', profIsFr: 'В друзьях',
     mtVetT: 'Ветеран', mtVetD: 'Сыграл больше всех игр во всех режимах — игр: {n}', medalVetP: 'Ветеран — игр: {n}',
     mtLowT: 'Дно', mtLowD: 'Медаль позора: самый низкий рейтинг среди всех игроков — {cat}: {n}', medalLowP: 'Дно — {cat}: {n}',
     mtEloT: 'Лучший рейтинг: {cat}', mtEloD: 'Самый высокий рейтинг среди всех игроков — {n}',
@@ -3558,6 +3622,14 @@ const I18N = {
     vSubPres: 'scores the most points', vRounds: 'Rounds played: <b>{n}</b>', vChartPres: 'Points by round', vTipRound: 'Round #{n}',
     mtWinT: 'Champion: {game}', mtWinD: 'Most wins in this mode of all players — {n}',
     mtDevT: 'Developer', mtDevD: 'Creator of Poker Extended. If something breaks — blame him.', medalDevP: 'Game developer',
+    friends: 'Friends', frTitle: '👥 Friends', frAddPh: 'Player nickname…', frAdd: 'Add', frIn: 'Friend requests', frOut: 'Waiting for reply', frList: 'My friends',
+    frNone: 'No friends yet. Add someone by nickname or from the list of all players.', frAccept: 'Accept', frDecline: 'Decline', frCancel: 'Cancel', frLater: 'Later',
+    frRemove: 'Remove friend', frSure: 'Sure?', frSent: 'Request sent: {name}', frNotFound: 'Player “{name}” not found', frSelf: 'That’s you 🙂', frAlready: 'Already friends',
+    frAdded: '{name} is now your friend!', frReqPop: 'wants to add you as a friend', frLobbyPop: 'Your friend {name} created a lobby', frJoinQ: 'want to join?', frJoin: 'Join', frWait: 'request sent',
+    frLeaveFirst: 'Leave your current room first', frOnlineN: '· {n} online',
+    frRules: 'Friends don’t work yet: add the new Firebase rules (friendReq and presence).',
+    onMenu: 'online · in menu', onLobby: 'in lobby · {game} ({n}/{max})', onGame: 'playing · {game}', offNow: 'offline', offSeen: 'last seen {t} ago',
+    tMin: '{n} min', tHour: '{n} h', tDay: '{n} d', profAddFr: 'Add friend', profReqSent: 'Request sent', profAcceptFr: 'Accept request', profIsFr: 'Friends',
     mtVetT: 'Veteran', mtVetD: 'Played more games than anyone across all modes — games: {n}', medalVetP: 'Veteran — games: {n}',
     mtLowT: 'Rock Bottom', mtLowD: 'Medal of shame: lowest rating of all players — {cat}: {n}', medalLowP: 'Rock Bottom — {cat}: {n}',
     mtEloT: 'Top rating: {cat}', mtEloD: 'Highest rating of all players — {n}',
@@ -3776,6 +3848,14 @@ const I18N = {
     vSubPres: 'haalt de meeste punten', vRounds: 'Rondes gespeeld: <b>{n}</b>', vChartPres: 'Punten per ronde', vTipRound: 'Ronde #{n}',
     mtWinT: 'Kampioen: {game}', mtWinD: 'Meeste overwinningen in deze modus van alle spelers — {n}',
     mtDevT: 'Ontwikkelaar', mtDevD: 'Maker van Poker Extended. Gaat er iets stuk — dan ligt het aan hem.', medalDevP: 'Ontwikkelaar van het spel',
+    friends: 'Vrienden', frTitle: '👥 Vrienden', frAddPh: 'Bijnaam van speler…', frAdd: 'Toevoegen', frIn: 'Vriendschapsverzoeken', frOut: 'Wachten op antwoord', frList: 'Mijn vrienden',
+    frNone: 'Nog geen vrienden. Voeg iemand toe via bijnaam of uit de lijst van alle spelers.', frAccept: 'Accepteren', frDecline: 'Weigeren', frCancel: 'Annuleren', frLater: 'Later',
+    frRemove: 'Vriend verwijderen', frSure: 'Zeker?', frSent: 'Verzoek verstuurd: {name}', frNotFound: 'Speler “{name}” niet gevonden', frSelf: 'Dat ben jij 🙂', frAlready: 'Al vrienden',
+    frAdded: '{name} is nu je vriend!', frReqPop: 'wil je als vriend toevoegen', frLobbyPop: 'Je vriend {name} heeft een lobby gemaakt', frJoinQ: 'meedoen?', frJoin: 'Meedoen', frWait: 'verzoek verstuurd',
+    frLeaveFirst: 'Verlaat eerst je huidige kamer', frOnlineN: '· {n} online',
+    frRules: 'Vrienden werken nog niet: voeg de nieuwe Firebase-regels toe (friendReq en presence).',
+    onMenu: 'online · in menu', onLobby: 'in lobby · {game} ({n}/{max})', onGame: 'speelt · {game}', offNow: 'offline', offSeen: '{t} geleden online',
+    tMin: '{n} min', tHour: '{n} u', tDay: '{n} d', profAddFr: 'Vriend toevoegen', profReqSent: 'Verzoek verstuurd', profAcceptFr: 'Verzoek accepteren', profIsFr: 'Vrienden',
     mtVetT: 'Veteraan', mtVetD: 'Speelde de meeste potjes van iedereen in alle modi — potjes: {n}', medalVetP: 'Veteraan — potjes: {n}',
     mtLowT: 'Dieptepunt', mtLowD: 'Medaille van schaamte: laagste rating van alle spelers — {cat}: {n}', medalLowP: 'Dieptepunt — {cat}: {n}',
     mtEloT: 'Hoogste rating: {cat}', mtEloD: 'Hoogste rating van alle spelers — {n}',
@@ -4576,6 +4656,7 @@ function render(v) {
   if (['handover', 'gameover', 'lobby', 'waiting'].includes(v.phase)) accFlushStats(v, v.phase === 'gameover');
   if (v.phase === 'lobby' || v.phase === 'gameover') loadChamps(false);
   voiceSync(v);
+  onlTouch();
 }
 
 /* ---- лобби ---- */
@@ -6406,16 +6487,23 @@ function updateAccountUI() {
         <div class="acc-r"><span>${t('catBj')}</span>${tierBadge(r.bj ?? RATING_START, true)}</div>
       </div>
       <div class="acc-btns"><button type="button" class="primary small" data-acc="profile">${t('profile')}</button>
+      <button type="button" class="ghost small" id="accFriends" data-acc="friends">👥 ${t('friends')}</button>
       <button type="button" class="ghost small lbBtn" data-acc="lb">${t('leaderboard')}</button>
       <button type="button" class="ghost small" data-acc="logout">${t('logout')}</button></div>`;
   }
   box.querySelectorAll('[data-acc]').forEach(b => b.addEventListener('click', () => accAction(b.dataset.acc)));
+  // друзья и онлайн включаются, как только есть профиль
+  const uid = myUid();
+  if (uid && FR.uid !== uid) { FR.uid = uid; frStart(); }
+  else if (!uid && FR.uid) { FR.uid = null; frStop(); }
+  frBadge();
 }
 async function accAction(a) {
   if (a === 'login' || a === 'register') openAuth(a);
   else if (a === 'lb') openLeaderboard();
+  else if (a === 'friends') openFriends();
   else if (a === 'profile') openProfile(ACC.user && ACC.user.uid);
-  else if (a === 'logout') { try { await ACC.auth.signOut(); } catch (e) {} $('#nameIn').disabled = false; }
+  else if (a === 'logout') { onlOff(); try { await ACC.auth.signOut(); } catch (e) {} $('#nameIn').disabled = false; }
   else if (a === 'savename') {
     const err = $('#accNameErr');
     try { err.textContent = ''; await accCreateProfile($('#accNameIn').value); updateAccountUI(); }
@@ -6465,7 +6553,8 @@ async function forgotPassword() {
    Загружаем всех зарегистрированных разом (до 1000) и дальше сортируем и ищем у себя, без новых запросов. */
 let lbCat = 'poker', lbUsers = null, lbLoadedAt = 0;
 function lbAva(u) {
-  return isAvatar(u.avatar) ? `<div class="ava lav photo"><img src="${u.avatar}" alt=""></div>` : `<div class="ava lav" style="--h:${nameHue(u.name || '?')}">${esc(initials(u.name || '?'))}</div>`;
+  const a = isAvatar(u.avatar) ? `<div class="ava lav photo"><img src="${u.avatar}" alt=""></div>` : `<div class="ava lav" style="--h:${nameHue(u.name || '?')}">${esc(initials(u.name || '?'))}</div>`;
+  return `<div class="lav-w">${a}${onlDot(u.id)}</div>`;
 }
 function renderLbList() {
   const list = $('#lbList');
@@ -6494,6 +6583,7 @@ function renderLbList() {
 async function openLeaderboard(cat) {
   if (!ACC.on) return;
   loadChamps(false);
+  onlLoadAll().then(() => { if (!$('#lbModal').classList.contains('hidden')) renderLbList(); });
   if (cat) lbCat = cat;
   $('#lbModal').classList.remove('hidden');
   $('#lbTabPoker').classList.toggle('on', lbCat === 'poker');
@@ -6639,7 +6729,7 @@ const STAT_ROWS = {
 };
 async function openProfile(uid) {
   if (!ACC.on || !uid) return;
-  loadChamps(false);
+  loadChamps(false); onlLoadOne(uid);
   $('#profModal').classList.remove('hidden');
   $('#profBody').innerHTML = `<div class="lb-msg">${t('lbLoading')}</div>`;
   try {
@@ -6681,6 +6771,7 @@ function renderProfile() {
     <div class="phead">${av}<div class="pinfo">
       <div class="pname">${nameHTML(d.name || '?', Math.max(r.poker ?? RATING_START, r.bj ?? RATING_START), null)}${mine ? ` <small>${t('you')}</small>` : ''}</div>
       ${(() => { const gs = GAMES.filter(g => CHAMPS[g] && CHAMPS[g].uid === uid), es = eloMedals(uid), fs = funMedals(uid), dev = isDev(uid); return dev || gs.length || es.length || fs.length ? `<div class="pmedals">${dev ? `<span class="pmedal dev"><i class="medal dev"><b>${DEV_ICON}</b></i>${t('medalDevP')}</span>` : ''}${fs.map(k => `<span class="pmedal ${FUN_MEDALS[k].cls}"><i class="medal ${FUN_MEDALS[k].cls}"><b>${FUN_MEDALS[k].icon}</b></i>${t(FUN_MEDALS[k].p, FUN_MEDALS[k].args(CHAMPS['fun_' + k]))}</span>`).join('')}${es.map(c => `<span class="pmedal elo"><i class="medal elo"><b>${ELO_ICON[c]}</b></i>${t('medalEloP', { cat: t(c === 'bj' ? 'catBj' : 'catPoker'), n: fmtR(CHAMPS['elo_' + c].r) })}</span>`).join('')}${gs.map(g => `<span class="pmedal"><i class="medal"><b>${GAME_ICON[g]}</b></i>${t('medalP', { game: t(GAME_KEY[g]), n: CHAMPS[g].w })}</span>`).join('')}</div>` : ''; })()}
+      ${frProfileBtn(uid)}
       ${since ? `<div class="psince">${t('profSince', { d: since })}</div>` : ''}
       ${GAMES.includes(d.fav) ? `<div class="pfav">${t('profFav')}: <b>${GAME_ICON[d.fav]} ${t(GAME_KEY[d.fav])}</b></div>` : ''}
       ${d.bio ? `<div class="pbio">«${esc(String(d.bio).slice(0, 120))}»</div>` : ''}
@@ -6713,6 +6804,325 @@ function renderProfile() {
     });
   }
 }
+/* =====================================================================
+   ДРУЗЬЯ И ОНЛАЙН
+   presence/{uid} — где игрок сейчас (меню / лобби / игра) и когда был замечен; обновляется каждые 90 с.
+   friendReq/{от_кому} — заявка в друзья: pending → ok (принята) или del (удалил из друзей).
+   Свой список друзей каждый хранит в своём профиле (users/{uid}.friends).
+   ===================================================================== */
+const ONLINE_MS = 4 * 60 * 1000, BEAT_MS = 90 * 1000;
+const ONL = { sig: '', at: 0, timer: null, all: new Map(), lbAt: 0 };
+const FR = { list: [], info: new Map(), inReq: [], outReq: [], unsubs: [], presUnsubs: [], presKey: '', notified: new Set(), err: '', busy: false, sure: '' };
+const fv = () => firebase.firestore.FieldValue;
+const myUid = () => ACC.user && ACC.profile ? ACC.user.uid : null;
+const isOnline = p => !!p && p.st !== 'off' && Date.now() - (p.at || 0) < ONLINE_MS;
+
+// где я сейчас — для друзей
+function onlState() {
+  if (!view || !roomCode) return { st: 'menu' };
+  const g = view.settings.game;
+  return { st: view.phase === 'lobby' ? 'lobby' : 'game', room: roomCode, game: g, host: !!isHost, n: view.players.length, max: MAX_PLAYERS[g] || 9 };
+}
+function onlTouch(force) {
+  const uid = myUid(); if (!uid) return;
+  const s = onlState(), sig = JSON.stringify(s), now = Date.now();
+  if (!force && sig === ONL.sig && now - ONL.at < BEAT_MS) return;
+  if (!force && now - ONL.at < 2500) { clearTimeout(ONL.timer); ONL.timer = setTimeout(() => onlTouch(), 2600); return; }
+  ONL.sig = sig; ONL.at = now;
+  const doc = { ...s, name: ACC.profile.name, at: now };
+  ONL.all.set(uid, doc);
+  ACC.db.collection('presence').doc(uid).set(doc).catch(e => { if (!FR.err) { FR.err = 'rules'; console.warn('presence:', e); frRenderAll(); } });
+}
+setInterval(() => onlTouch(), 30000);
+function onlOff() {
+  const uid = myUid(); if (!uid) return;
+  try { ACC.db.collection('presence').doc(uid).set({ st: 'off', name: ACC.profile.name, at: Date.now() }); } catch (e) { }
+}
+window.addEventListener('pagehide', onlOff);
+
+// «в лобби · Холдем (3/9)», «был(а) в сети 2 ч назад»
+function agoText(ms) {
+  const m = Math.max(1, Math.round(ms / 60000));
+  return m < 60 ? t('tMin', { n: m }) : m < 60 * 24 ? t('tHour', { n: Math.round(m / 60) }) : t('tDay', { n: Math.round(m / 1440) });
+}
+function onlText(p) {
+  if (!p) return t('offNow');
+  if (!isOnline(p)) return p.at ? t('offSeen', { t: agoText(Date.now() - p.at) }) : t('offNow');
+  const g = GAMES.includes(p.game) ? GAME_ICON[p.game] + ' ' + t(GAME_KEY[p.game]) : '';
+  return p.st === 'lobby' ? t('onLobby', { game: g, n: p.n || 1, max: p.max || 9 }) : p.st === 'game' ? t('onGame', { game: g }) : t('onMenu');
+}
+const onlCls = p => !isOnline(p) ? 'off' : p.st === 'lobby' ? 'lobby' : p.st === 'game' ? 'game' : 'on';
+const onlDot = uid => { const p = ONL.all.get(uid); return isOnline(p) ? `<i class="odot ${onlCls(p)}" title="${esc(onlText(p))}"></i>` : ''; };
+// кто сейчас онлайн вообще — для списка всех игроков
+async function onlLoadAll() {
+  if (!ACC.on || !ACC.user || Date.now() - ONL.lbAt < 30000) return;
+  ONL.lbAt = Date.now();
+  try {
+    const s = await ACC.db.collection('presence').where('at', '>', Date.now() - ONLINE_MS).get();
+    s.docs.forEach(d => ONL.all.set(d.id, d.data()));
+  } catch (e) { console.warn('presence list:', e); }
+}
+
+/* ---- подписки ---- */
+function frStop() {
+  FR.unsubs.forEach(u => { try { u(); } catch (e) { } }); FR.unsubs = [];
+  FR.presUnsubs.forEach(u => { try { u(); } catch (e) { } }); FR.presUnsubs = []; FR.presKey = '';
+  FR.list = []; FR.inReq = []; FR.outReq = []; FR.err = '';
+  document.querySelectorAll('.frpop').forEach(e => e.remove());
+}
+function frStart() {
+  frStop();
+  const uid = myUid(); if (!uid) return;
+  FR.list = Array.isArray(ACC.profile.friends) ? ACC.profile.friends.slice() : [];
+  const db = ACC.db, fail = e => { console.warn('friends:', e); FR.err = 'rules'; frRenderAll(); };
+  // входящие: новые заявки и «он удалил тебя из друзей»
+  FR.unsubs.push(db.collection('friendReq').where('to', '==', uid).onSnapshot(s => {
+    const reqs = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    for (const r of reqs) {
+      if (r.st === 'del') { frDrop(r.from); d_(r.id); }
+      else if (r.st === 'pending' && FR.list.includes(r.from)) db.collection('friendReq').doc(r.id).update({ st: 'ok' }).catch(() => {});
+    }
+    const prev = new Set(FR.inReq.map(r => r.from));
+    FR.inReq = reqs.filter(r => r.st === 'pending' && !FR.list.includes(r.from));
+    for (const r of FR.inReq) { FR.info.set(r.from, { name: r.fromName }); if (!prev.has(r.from)) frPopReq(r); }
+    frRenderAll();
+  }, fail));
+  // исходящие: заявку приняли — добавляем к себе и убираем заявку
+  FR.unsubs.push(db.collection('friendReq').where('from', '==', uid).onSnapshot(s => {
+    const reqs = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    for (const r of reqs) if (r.st === 'ok') { frAddLocal(r.to, r.toName, true); d_(r.id); }
+    FR.outReq = reqs.filter(r => r.st === 'pending');
+    for (const r of FR.outReq) FR.info.set(r.to, { name: r.toName });
+    frRenderAll();
+  }, fail));
+  frWatchPresence();
+  frLoadInfo();
+  onlTouch(true);
+}
+const d_ = id => ACC.db.collection('friendReq').doc(id).delete().catch(() => {});
+// онлайн друзей: по 10 штук в одном запросе
+function frWatchPresence() {
+  const key = FR.list.slice().sort().join(',');
+  if (key === FR.presKey) return;
+  FR.presUnsubs.forEach(u => { try { u(); } catch (e) { } }); FR.presUnsubs = []; FR.presKey = key;
+  for (let i = 0; i < FR.list.length; i += 10) {
+    const chunk = FR.list.slice(i, i + 10);
+    FR.presUnsubs.push(ACC.db.collection('presence').where(firebase.firestore.FieldPath.documentId(), 'in', chunk).onSnapshot(s => {
+      for (const d of s.docs) { const p = d.data(); ONL.all.set(d.id, p); frCheckLobby(d.id, p); }
+      frRenderAll();
+    }, e => { console.warn('presence:', e); FR.err = 'rules'; frRenderAll(); }));
+  }
+}
+// имена и аватарки друзей
+async function frLoadInfo() {
+  const need = FR.list.filter(u => !FR.info.has(u) || FR.info.get(u).avatar === undefined);
+  await Promise.all(need.map(async u => {
+    try { const s = await ACC.db.collection('users').doc(u).get(); if (s.exists) { const d = s.data(); FR.info.set(u, { name: d.name, avatar: d.avatar || '', ratings: d.ratings || {} }); } } catch (e) { }
+  }));
+  frRenderAll();
+}
+function frAddLocal(uid, name, toast_) {
+  if (!FR.list.includes(uid)) {
+    FR.list.push(uid);
+    ACC.profile.friends = FR.list.slice();
+    ACC.db.collection('users').doc(myUid()).update({ friends: fv().arrayUnion(uid) }).catch(e => console.warn(e));
+    if (toast_) { toast('🤝 ' + t('frAdded', { name: name || '?' })); frPing(); }
+  }
+  if (name && !FR.info.has(uid)) FR.info.set(uid, { name });
+  frWatchPresence(); frLoadInfo();
+}
+function frDrop(uid) {
+  if (!FR.list.includes(uid)) return;
+  FR.list = FR.list.filter(u => u !== uid); ACC.profile.friends = FR.list.slice();
+  ACC.db.collection('users').doc(myUid()).update({ friends: fv().arrayRemove(uid) }).catch(e => console.warn(e));
+  frWatchPresence(); frRenderAll();
+}
+
+/* ---- действия ---- */
+async function frRequest(uid, name) {
+  const me = myUid(); if (!me || !uid || uid === me) return;
+  if (FR.list.includes(uid)) { toast(t('frAlready')); return; }
+  const inc = FR.inReq.find(r => r.from === uid);
+  if (inc) return frAccept(inc);
+  try {
+    await ACC.db.collection('friendReq').doc(me + '_' + uid).set({ from: me, to: uid, fromName: ACC.profile.name, toName: name || '', at: Date.now(), st: 'pending' });
+    FR.outReq = FR.outReq.filter(r => r.to !== uid).concat([{ id: me + '_' + uid, from: me, to: uid, toName: name, st: 'pending' }]);
+    toast('📨 ' + t('frSent', { name: name || '?' }));
+  } catch (e) { console.warn(e); FR.err = 'rules'; toast(t('frRules')); }
+  frRenderAll();
+}
+async function frAccept(r) {
+  frAddLocal(r.from, r.fromName, false);
+  FR.inReq = FR.inReq.filter(x => x.from !== r.from);
+  document.querySelectorAll(`.frpop[data-key="req${r.from}"]`).forEach(e => e.remove());
+  try { await ACC.db.collection('friendReq').doc(r.id).update({ st: 'ok' }); } catch (e) { console.warn(e); }
+  toast('🤝 ' + t('frAdded', { name: r.fromName || '?' }));
+  frRenderAll();
+}
+function frDecline(r) {
+  FR.inReq = FR.inReq.filter(x => x.from !== r.from);
+  document.querySelectorAll(`.frpop[data-key="req${r.from}"]`).forEach(e => e.remove());
+  d_(r.id); frRenderAll();
+}
+function frCancel(uid) { const me = myUid(); FR.outReq = FR.outReq.filter(r => r.to !== uid); d_(me + '_' + uid); frRenderAll(); }
+async function frRemove(uid) {
+  const me = myUid(), info = FR.info.get(uid) || {};
+  frDrop(uid);
+  try { await ACC.db.collection('friendReq').doc(me + '_' + uid).set({ from: me, to: uid, fromName: ACC.profile.name, toName: info.name || '', at: Date.now(), st: 'del' }); } catch (e) { console.warn(e); }
+}
+async function frAddByName() {
+  const inp = $('#frAddIn'), name = inp.value.replace(/\s+/g, ' ').trim(), msg = $('#frMsg');
+  if (!name) return;
+  msg.textContent = ''; msg.classList.remove('err');
+  try {
+    const s = await ACC.db.collection('names').doc(name.toLowerCase()).get();
+    const uid = s.exists && (s.data() || {}).uid;
+    if (!uid) { msg.textContent = t('frNotFound', { name }); msg.classList.add('err'); return; }
+    if (uid === myUid()) { msg.textContent = t('frSelf'); return; }
+    let real = name; try { const u = await ACC.db.collection('users').doc(uid).get(); if (u.exists) real = u.data().name || name; } catch (e) { }
+    await frRequest(uid, real); inp.value = '';
+  } catch (e) { console.warn(e); msg.textContent = t('frRules'); msg.classList.add('err'); }
+}
+function frJoin(code) {
+  if (roomCode) { toast(t('frLeaveFirst')); return; }
+  $('#frModal').classList.add('hidden'); $('#profModal').classList.add('hidden');
+  document.querySelectorAll('.frpop').forEach(e => e.remove());
+  $('#codeIn').value = code; $('#joinBtn').click();
+}
+
+/* ---- всплывашки: «друг создал лобби», «заявка в друзья» ---- */
+function frPing() {
+  try {
+    const ctx = frPing.ctx || (frPing.ctx = new (window.AudioContext || window.webkitAudioContext)());
+    if (ctx.state === 'suspended') ctx.resume();
+    [660, 880].forEach((f, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f; o.type = 'sine';
+      const t0 = ctx.currentTime + i * .12; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.12, t0 + .02); g.gain.exponentialRampToValueAtTime(.001, t0 + .25);
+      o.connect(g).connect(ctx.destination); o.start(t0); o.stop(t0 + .3); });
+  } catch (e) { }
+}
+function frPop(key, html, buttons, life) {
+  let box = $('#frPops'); if (!box) return;
+  box.querySelectorAll(`.frpop[data-key="${key}"]`).forEach(e => e.remove());
+  const el = document.createElement('div'); el.className = 'frpop'; el.dataset.key = key;
+  el.innerHTML = `<button type="button" class="frpop-x" aria-label="✕">✕</button>${html}<div class="frpop-btns">${buttons.map((b, i) => `<button type="button" class="${b.cls || 'ghost'} small" data-i="${i}">${b.label}</button>`).join('')}</div>${life ? `<i class="frpop-bar" style="animation-duration:${life}ms"></i>` : ''}`;
+  const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 300); };
+  el.querySelector('.frpop-x').addEventListener('click', close);
+  el.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => { const f = buttons[+b.dataset.i].on; close(); if (f) f(); }));
+  box.appendChild(el); frPing();
+  if (life) setTimeout(close, life);
+  return el;
+}
+function frAvaHTML(uid, name) {
+  const i = FR.info.get(uid) || {};
+  return isAvatar(i.avatar) ? `<div class="ava frava photo"><img src="${i.avatar}" alt=""></div>` : `<div class="ava frava" style="--h:${nameHue(name || '?')}">${esc(initials(name || '?'))}</div>`;
+}
+function frPopReq(r) {
+  frPop('req' + r.from, `<div class="frpop-row">${frAvaHTML(r.from, r.fromName)}<div><b>🤝 ${esc(r.fromName || '?')}</b><span>${t('frReqPop')}</span></div></div>`,
+    [{ label: t('frAccept'), cls: 'primary', on: () => frAccept(r) }, { label: t('frLater') }], 0);
+}
+function frCheckLobby(uid, p) {
+  const key = uid + '|' + p.room;
+  if (!(p.st === 'lobby' && p.host && p.room && isOnline(p))) {
+    // лобби закрылось или игра началась — убираем приглашение
+    document.querySelectorAll(`.frpop[data-key^="lobby${uid}|"]`).forEach(e => e.remove());
+    return;
+  }
+  if (FR.notified.has(key) || roomCode || currentScreen !== 'menu') return;
+  FR.notified.add(key);
+  const name = p.name || (FR.info.get(uid) || {}).name || '?', g = GAMES.includes(p.game) ? GAME_ICON[p.game] + ' ' + t(GAME_KEY[p.game]) : '';
+  frPop('lobby' + key, `<div class="frpop-row">${frAvaHTML(uid, name)}<div><b>🎉 ${t('frLobbyPop', { name: esc(name) })}</b><span>${esc(g)} · ${p.n || 1}/${p.max || 9} · ${t('frJoinQ')}</span></div></div>`,
+    [{ label: '▶ ' + t('frJoin'), cls: 'primary', on: () => frJoin(p.room) }, { label: t('frLater') }], 25000);
+}
+
+/* ---- окно «Друзья» ---- */
+function openFriends() {
+  if (!myUid()) return;
+  $('#frModal').classList.remove('hidden'); $('#frMsg').textContent = '';
+  const body = $('#frBody'); body.dataset.h = ''; body.classList.add('fresh'); setTimeout(() => body.classList.remove('fresh'), 900);
+  frLoadInfo(); renderFriends();
+}
+function frRenderAll() {
+  frBadge();
+  if (!$('#frModal').classList.contains('hidden')) renderFriends();
+  // свой профиль не перерисовываем — там можно что-то печатать
+  if (!$('#profModal').classList.contains('hidden') && profData && profData.uid !== myUid()) renderProfile();
+}
+function frBadge() {
+  const b = $('#accFriends'); if (!b) return;
+  const on = FR.list.filter(u => isOnline(ONL.all.get(u))).length, n = FR.inReq.length;
+  b.innerHTML = `👥 ${t('friends')}${on ? ` <span class="fron">${t('frOnlineN', { n: on })}</span>` : ''}${n ? `<span class="frbadge">${n}</span>` : ''}`;
+}
+function renderFriends() {
+  const body = $('#frBody'); if (!body) return;
+  const nm = u => (FR.info.get(u) || {}).name || (ONL.all.get(u) || {}).name || '?';
+  const rank = p => !isOnline(p) ? 9 : p.st === 'lobby' ? 0 : p.st === 'game' ? 1 : 2;
+  const list = FR.list.slice().sort((a, b) => rank(ONL.all.get(a)) - rank(ONL.all.get(b)) || (ONL.all.get(b) || {}).at - (ONL.all.get(a) || {}).at || nm(a).localeCompare(nm(b)));
+  const row = (uid, name, status, cls, btns) => `<div class="fr-row ${cls}" data-uid="${esc(uid)}">
+      <div class="fr-ava">${frAvaHTML(uid, name)}${cls && cls !== 'off' ? `<i class="odot ${cls}"></i>` : ''}</div>
+      <div class="fr-name"><b>${nameHTML(name, undefined, uid)}</b><small>${status}</small></div>
+      <div class="fr-btns">${btns}</div></div>`;
+  let h = '';
+  if (FR.err) h += `<div class="fr-err">${t('frRules')}</div>`;
+  if (FR.inReq.length) h += `<div class="fr-h">${t('frIn')} <span class="frbadge">${FR.inReq.length}</span></div>` + FR.inReq.map(r => row(r.from, r.fromName || '?', t('frReqPop'), 'req',
+    `<button type="button" class="primary small" data-fa="${esc(r.from)}">${t('frAccept')}</button><button type="button" class="ghost small" data-fd="${esc(r.from)}">${t('frDecline')}</button>`)).join('');
+  h += `<div class="fr-h">${t('frList')}${FR.list.length ? ` · ${FR.list.length}` : ''}</div>`;
+  h += list.length ? list.map(uid => {
+    const p = ONL.all.get(uid), c = onlCls(p), joinable = isOnline(p) && p.room && (p.st === 'lobby' || p.st === 'game');
+    return row(uid, nm(uid), esc(onlText(p)), c,
+      `${joinable ? `<button type="button" class="primary small" data-fj="${esc(p.room)}">▶ ${t('frJoin')}</button>` : ''}<button type="button" class="ghost small fr-del" data-fr="${esc(uid)}" title="${t('frRemove')}">${FR.sure === uid ? t('frSure') : '✕'}</button>`);
+  }).join('') : `<div class="lb-msg">${t('frNone')}</div>`;
+  if (FR.outReq.length) h += `<div class="fr-h">${t('frOut')}</div>` + FR.outReq.map(r => row(r.to, r.toName || (FR.info.get(r.to) || {}).name || '?', '⏳ ' + t('frWait'), 'out',
+    `<button type="button" class="ghost small" data-fc="${esc(r.to)}">${t('frCancel')}</button>`)).join('');
+  if (body.dataset.h === h) return;          // ничего не поменялось — не мигаем
+  // пока палец/мышь зажаты на списке, не перерисовываем — иначе нажатие «теряется»
+  if (FR.down) { FR.redraw = true; return; }
+  body.dataset.h = h; body.innerHTML = h;
+}
+document.addEventListener('pointerdown', e => { if (e.target.closest('#frBody')) FR.down = true; }, true);
+document.addEventListener('pointerup', () => { if (!FR.down) return; FR.down = false; if (FR.redraw) { FR.redraw = false; setTimeout(renderFriends, 0); } }, true);
+document.addEventListener('pointercancel', () => { FR.down = false; }, true);
+document.addEventListener('click', e => {
+  const b = e.target.closest('#frBody [data-fa],#frBody [data-fd],#frBody [data-fc],#frBody [data-fr],#frBody [data-fj]');
+  if (b) {
+    e.stopPropagation();
+    const d = b.dataset;
+    if (d.fa) { const r = FR.inReq.find(x => x.from === d.fa); if (r) frAccept(r); }
+    else if (d.fd) { const r = FR.inReq.find(x => x.from === d.fd); if (r) frDecline(r); }
+    else if (d.fc) frCancel(d.fc);
+    else if (d.fj) frJoin(d.fj);
+    else if (d.fr) {
+      if (FR.sure === d.fr) { FR.sure = ''; frRemove(d.fr); }
+      else { FR.sure = d.fr; renderFriends(); setTimeout(() => { if (FR.sure === d.fr) { FR.sure = ''; renderFriends(); } }, 3000); }
+    }
+    return;
+  }
+  const r = e.target.closest('#frBody .fr-row');
+  if (r && !e.target.closest('.medal')) openProfile(r.dataset.uid);
+});
+// кнопка в профиле другого игрока
+function frProfileBtn(uid) {
+  const me = myUid(); if (!me || uid === me) return '';
+  const p = ONL.all.get(uid);
+  const st = `<div class="pon ${onlCls(p)}"><i class="odot ${onlCls(p)}"></i>${esc(onlText(p))}${isOnline(p) && p.room && p.st !== 'menu' ? ` <button type="button" class="primary small" data-pj="${esc(p.room)}">▶ ${t('frJoin')}</button>` : ''}</div>`;
+  let b;
+  if (FR.list.includes(uid)) b = `<button type="button" class="ghost small pfr on" disabled>✓ ${t('profIsFr')}</button>`;
+  else if (FR.inReq.some(r => r.from === uid)) b = `<button type="button" class="primary small pfr" data-pfa="${esc(uid)}">✓ ${t('profAcceptFr')}</button>`;
+  else if (FR.outReq.some(r => r.to === uid)) b = `<button type="button" class="ghost small pfr" disabled>⏳ ${t('profReqSent')}</button>`;
+  else b = `<button type="button" class="primary small pfr" data-pfadd="${esc(uid)}">➕ ${t('profAddFr')}</button>`;
+  return `<div class="pfrrow">${st}${b}</div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('#profBody [data-pfadd],#profBody [data-pfa],#profBody [data-pj]'); if (!b) return;
+  if (b.dataset.pj) return frJoin(b.dataset.pj);
+  if (b.dataset.pfa) { const r = FR.inReq.find(x => x.from === b.dataset.pfa); if (r) frAccept(r); return; }
+  const uid = b.dataset.pfadd; b.disabled = true;
+  frRequest(uid, profData && profData.uid === uid ? profData.d.name : '');
+});
+async function onlLoadOne(uid) {
+  if (!ACC.on || !ACC.user || !uid) return;
+  try { const s = await ACC.db.collection('presence').doc(uid).get(); if (s.exists) { ONL.all.set(uid, s.data()); if (profData && profData.uid === uid) renderProfile(); } } catch (e) { }
+}
+
 function ratingDeltaHTML(name) {
   if (!lastRatings || !view || view.phase !== 'gameover') return '';
   const x = lastRatings.list.find(i => i.name === name);
@@ -6729,6 +7139,7 @@ $('#authForgot').addEventListener('click', forgotPassword);
 $('#lbTabPoker').addEventListener('click', () => openLeaderboard('poker'));
 $('#lbTabBj').addEventListener('click', () => openLeaderboard('bj'));
 $('#lbSearch').addEventListener('input', renderLbList);
+$('#frAddForm').addEventListener('submit', e => { e.preventDefault(); frAddByName(); });
 $('#lbList').addEventListener('click', e => { const r = e.target.closest('[data-uid]'); if (r) openProfile(r.dataset.uid); });
 $('#lobbyPlayers').addEventListener('click', e => { if (e.target.closest('button')) return; const r = e.target.closest('[data-uid]'); if (r) openProfile(r.dataset.uid); });
 $('#roleReveal').addEventListener('click', () => $('#roleReveal').classList.add('hidden'));
