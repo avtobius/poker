@@ -2056,6 +2056,8 @@ class PokerTable {
     this.runoutDelay = opts.runoutDelay ?? 1300;  // пауза между улицами при олл-ине
     this.trickDelay = opts.trickDelay ?? 1100;
     this.autoDelay = opts.autoDelay ?? 900;       // через сколько ходить за отключившегося
+    this.forfeitMs = opts.forfeitMs ?? 25000;     // сколько ждать отключившегося, прежде чем засчитать ему поражение
+    this.ff = {};                                 // таймеры «не вернулся — выбыл» (по имени игрока)
     // Король (Президент): пауза, когда все спасовали, перед новым кругом
     this.autoNext = opts.autoNext ?? true;
     this.onChange = opts.onChange || (() => {});
@@ -2096,7 +2098,7 @@ class PokerTable {
     for (let i = 1; i <= n; i++) { const j = ((from + i) % n + n) % n; if (pred(this.players[j])) return j; }
     return -1;
   }
-  eligible(p) { return p.connected && !p.sitOut && (this.noChips || p.stack > 0); }
+  eligible(p) { return p.connected && !p.sitOut && !p.left && (this.noChips || p.stack > 0); }
   canAct(p) { return p.inHand && !p.folded && !p.allIn; }
   live() { return this.players.filter(p => p.inHand && !p.folded); }
   needsAction(p) {
@@ -2139,6 +2141,10 @@ class PokerTable {
     if (same) {
       if (same.connected) return { error: 'nameTaken' };
       same.id = id; same.connected = true; same.timeouts = 0; same.voice = false; same.vmute = false;
+      // вернулся вовремя — поражение не засчитываем; опоздал — смотрит игру со стороны
+      if (this.ff[same.name]) { clearTimeout(this.ff[same.name]); delete this.ff[same.name]; }
+      same.discAt = null;
+      if (same.left) same.sitOut = true;
       this.addLog('rejoin', { name: same.name });
       if (this.inPlay && this.players[this.toAct] === same && !same.sitOut) { this.clearTimer('auto'); this.startTurnTimer(); }
       this.maybeResume(); this.changed();
@@ -2163,10 +2169,60 @@ class PokerTable {
       this.players = this.players.filter(q => q !== p);
       this.addLog('left', { name: p.name }); this.changed(); return;
     }
+    if (!p.connected) return;
     p.connected = false; p.voice = false;
-    this.addLog('disc', { name: p.name });
+    if (this.phase !== 'gameover' && !p.left && !p.isBot) {
+      // ждём 25 секунд: не вернулся — выбывает, а если остался один игрок — ему победа
+      p.discAt = Date.now();
+      if (this.ff[p.name]) clearTimeout(this.ff[p.name]);
+      this.ff[p.name] = setTimeout(() => { delete this.ff[p.name]; this.forfeit(p.name); }, this.forfeitMs);
+      this.addLog('discWait', { name: p.name, n: Math.round(this.forfeitMs / 1000) });
+    } else this.addLog('disc', { name: p.name });
     if (this.inPlay && this.players[this.toAct] === p) this.scheduleAutoAct();
-    if (this.pending.has(p.id)) this.scheduleMultiAuto();
+    if (this.pending.has(p.id) || this.pending.has(p.name)) this.scheduleMultiAuto();
+    this.changed();
+  }
+  // игрок сам вышел из идущей игры — поражение сразу, без ожидания
+  leave(id) {
+    const p = this.find(id); if (!p) return;
+    this.disconnect(id);
+    if (this.phase === 'lobby' || this.phase === 'gameover' || p.left || p.isBot) return;
+    if (this.ff[p.name]) { clearTimeout(this.ff[p.name]); delete this.ff[p.name]; }
+    this.forfeit(p.name);
+  }
+  clearForfeits() { for (const k in this.ff) clearTimeout(this.ff[k]); this.ff = {}; for (const p of this.players) { p.discAt = null; p.left = false; p.leftAt = 0; } }
+  // кто ещё в игре (не выбыл по ходу самой игры)
+  stillIn(q) {
+    if (this.isWolf) return !!q.role && !!q.alive;
+    if (this.isBunk) return !!q.bk && !q.bkOut;
+    if (this.isPres) return true;
+    return q.stack > 0 || (q.inHand && !q.folded);
+  }
+  forfeit(name) {
+    const p = this.players.find(q => q.name === name);
+    if (!p || p.connected || p.left || this.phase === 'lobby' || this.phase === 'gameover') return;
+    p.left = true; p.leftAt = Date.now(); p.discAt = null;
+    this.addLog('forfeit', { name: p.name });
+    const rest = this.players.filter(q => !q.left && this.stillIn(q));
+    if (rest.length <= 1) { this.forfeitWin(rest[0] || null); return; }
+    this.maybeResume();
+    this.changed();
+  }
+  // остался один — он и победил
+  forfeitWin(w) {
+    this.clearAllTimers(); this.pending = new Set(); this.toAct = -1;
+    if (w) {
+      if (this.isWolf) this.wwin = w.role === 'wolf' ? 'wolf' : 'vill';
+      if (this.isBunk && this.bk) this.bk.final = bkScore([w], this.bk);
+      if (!this.noChips) {
+        // все фишки со стола (и из банка) — победителю
+        const all = this.players.reduce((sum, q) => sum + q.stack + q.total, 0);
+        for (const q of this.players) { q.stack = 0; q.total = 0; q.bet = 0; }
+        w.stack = all;
+      }
+      this.addLog('forfeitWin', { name: w.name });
+    }
+    this.phase = 'gameover';
     this.changed();
   }
   updateSettings(s) {
@@ -2200,7 +2256,7 @@ class PokerTable {
   }
   setSitOut(id, v) {
     const p = this.find(id); if (!p) return 'notSeated';
-    if (this.phase === 'lobby') return null;
+    if (this.phase === 'lobby' || p.left) return null;
     p.sitOut = !!v;
     if (!v) p.timeouts = 0;
     this.addLog(v ? 'away' : 'back', { name: p.name });
@@ -2208,7 +2264,7 @@ class PokerTable {
       if (v) this.scheduleAutoAct();
       else if (p.connected) { this.clearTimer('auto'); this.startTurnTimer(); }
     }
-    if (v && this.pending.has(p.id)) this.scheduleMultiAuto();
+    if (v && (this.pending.has(p.id) || this.pending.has(p.name))) this.scheduleMultiAuto();
     if (!v) this.maybeResume();
     this.changed(); return null;
   }
@@ -2236,7 +2292,14 @@ class PokerTable {
 
   /* ---- ход раздачи ---- */
   // Таблица мест: чемпион, потом вылетевшие — кто позже (и с большим стеком) вылетел, тот выше
+  // ушедшие из игры — всегда в самом низу (кто ушёл позже — выше) и никогда не побеждают
   places() {
+    const r = this.placesRaw();
+    const gone = new Map(this.players.filter(p => p.left).map(p => [p.name, p.leftAt || 0]));
+    if (!gone.size) return r;
+    return r.filter(x => !gone.has(x.name)).concat(r.filter(x => gone.has(x.name)).sort((a, b) => gone.get(b.name) - gone.get(a.name)).map(x => ({ ...x, win: false, left: true })));
+  }
+  placesRaw() {
     if (this.isBunk) {
       // в бункере — победители; изгнанные ниже, кто продержался дольше — выше
       return this.players.filter(p => p.bk).slice().sort((a, b) => (a.bkOut ? 1 : 0) - (b.bkOut ? 1 : 0) || (b.bkOutAt || 0) - (a.bkOutAt || 0))
@@ -2270,7 +2333,7 @@ class PokerTable {
   rateKey() { return this.gameId || ''; }
   newGame() {
     if (this.phase !== 'gameover') return 'notOver';
-    this.markGame();
+    this.markGame(); this.clearForfeits();
     const s = this.settings;
     for (const p of this.players) { p.stack = this.noChips ? 0 : s.startStack; p.pts = 0; p.title = null; p.finish = null; }
     this.busts = []; this.stats = { bigPot: null, best: null };
@@ -2282,7 +2345,7 @@ class PokerTable {
   // После конца игры хост может вернуть всех в лобби и выбрать другую игру
   toLobby() {
     if (this.phase !== 'gameover') return 'notOver';
-    this.clearAllTimers();
+    this.clearAllTimers(); this.clearForfeits();
     this.players = this.players.filter(p => p.connected);
     for (const p of this.players) Object.assign(p, { stack: 0, inHand: false, folded: true, allIn: false, bet: 0, total: 0, hole: [], last: null, show: false, score: null, best: null, bj: null, sitOut: false, timeouts: 0, pts: 0, title: null, finish: null, got: null });
     this.pending = new Set(); this.pile = []; this.revo = false; this.wwin = null;
@@ -2297,7 +2360,7 @@ class PokerTable {
     if (this.phase !== 'lobby') return 'alreadyRunning';
     if (this.players.length < 2) return 'need2';
     const s = this.settings;
-    this.markGame();
+    this.markGame(); this.clearForfeits();
     for (const p of this.players) { p.stack = this.noChips ? 0 : s.startStack; p.pts = 0; p.title = null; p.finish = null; }
     if ((this.isWolf || this.isBunk) && this.players.length < 4) return 'need4';
     this.snapshot(0);
@@ -2307,6 +2370,8 @@ class PokerTable {
   startHand() {
     this.clearAllTimers();
     this.pending = new Set(); this.pendInfo = {};
+    // фишки ушедших сгорают — они больше не играют
+    if (!this.noChips) for (const p of this.players) if (p.left && p.stack > 0) { this.busts.push({ name: p.name, hand: this.handNo, start: p.stack }); p.stack = 0; }
     // Президент: сыграно нужное число раундов — конец игры
     if (this.isPres && this.handNo >= this.settings.rounds && this.handNo > 0) {
       if (this.phase !== 'gameover') { const w = this.places()[0]; this.addLog('presChampion', { name: w.name, n: w.pts }); }
@@ -2413,6 +2478,7 @@ class PokerTable {
   }
   // ошибки возвращаются кодом ('notYourTurn') или { k, p } с параметрами
   act(id, type, amount, auto = false, timedOut = false) {
+    { const p = this.find(id); if (p && p.left && !auto) return 'youLeft'; }
     if (this.settings.game === 'bj') return this.bjAct(id, type, auto, timedOut);
     if (this.isWolf) return this.wolfAct(id, type, amount);
     if (this.isBunk) return this.bunkAct(id, type, amount);
@@ -3287,8 +3353,10 @@ class PokerTable {
       myStats: (() => { const me = this.find(id); return me && me.st ? me.st : null; })(),
       pile: this.pile.slice(), pileBy: this.pile.length ? P(this.pileBy) : null, pileKey: this.pileKey || 0, revo: this.revo,
       history: this.phase === 'gameover' ? this.history : null,
+      gameId: this.gameId || '',
       players: this.players.map(p => ({
         id: p.id, name: p.name, stack: p.stack, bet: p.bet, connected: p.connected, sitOut: p.sitOut,
+        left: !!p.left, ffLeft: p.discAt && !p.left && !p.connected ? Math.max(0, this.forfeitMs - (Date.now() - p.discAt)) : 0,
         inHand: p.inHand, folded: p.folded, allIn: p.allIn, last: p.last, isHost: p.id === 'host', isBot: !!p.isBot, botLevel: p.botLevel || null,
         uid: p.uid || null, rating: (() => { const c = ['bj', 'pres', 'wolf', 'bunk'].includes(this.settings.game) ? 'bj' : 'poker'; return p.ratings && typeof p.ratings[c] === 'number' ? p.ratings[c] : null; })(),
         voice: !!p.voice, vmute: !!p.vmute,
@@ -3341,6 +3409,9 @@ const I18N = {
     'e.waitHandEnd': 'Дождитесь конца раздачи', 'e.alreadyRunning': 'Игра уже идёт', 'e.need2': 'Нужно минимум 2 игрока', 'e.cantActNow': 'Сейчас нельзя ходить',
     'e.notYourTurn': 'Сейчас не ваш ход', 'e.cantCheck': 'Чек нельзя — нужно уравнять {n}', 'e.nothingToCall': 'Ставок нет — можно сделать чек',
     'e.cantRaise': 'Повышать сейчас нельзя', 'e.badAmount': 'Неверная сумма', 'e.betMoreThan': 'Ставка должна быть больше {n}', 'e.minIs': 'Минимум {n}', 'e.unknownAction': 'Неизвестное действие',
+    'l.discWait': '📴 {name} отключился — ждём {n} сек, иначе поражение', 'l.forfeit': '🚪 {name} не вернулся и выбывает из игры', 'l.forfeitWin': '🏆 {name} побеждает — остальные покинули игру',
+    stLeft: 'Вышел', stDiscSec: '{n} с', 'e.youLeft': 'Ты вышел из этой игры — теперь можно только смотреть',
+    leaveSure: 'Выйти из игры? Это засчитается как поражение.', leftPenalty: 'засчитано поражение за выход из игры: {d} (рейтинг {r})',
     'l.rejoin': '{name} вернулся за стол', 'l.sits': '{name} садится за стол', 'l.sitsNext': '{name} садится за стол (сыграет со следующей раздачи)',
     'l.left': '{name} ушёл', 'l.disc': '{name} отключился', 'l.rebuy': '{name} докупается на {n}', 'l.away': '{name} отошёл от стола', 'l.back': '{name} вернулся в игру',
     'l.started': 'Игра началась. Стек {stack}, блайнды {sb}/{bb}', 'l.champion': '🏆 {name} забирает все фишки!', 'l.waiting': 'Ждём, пока за столом будет минимум 2 игрока с фишками…',
@@ -3514,7 +3585,7 @@ const I18N = {
     'ae.acc/name-short': 'Имя — минимум 2 символа', 'ae.acc/name-taken': 'Это имя уже занято', 'ae.auth/email-already-in-use': 'Эта почта уже зарегистрирована',
     'ae.auth/invalid-email': 'Неверный адрес почты', 'ae.auth/weak-password': 'Пароль — минимум 6 символов', 'ae.auth/invalid-credential': 'Неверная почта или пароль',
     'ae.auth/too-many-requests': 'Слишком много попыток, попробуй позже', 'ae.auth/network-request-failed': 'Нет связи с сервером', 'ae.unknown': 'Что-то пошло не так ({e})',
-    vYouWin: 'ПОБЕДА!', vWinner: 'Победитель', vSub: 'забирает все фишки за столом', vChips: 'фишек', vOutOnHand: 'выбыл на раздаче #{n}', vOut: 'выбыл',
+    vYouWin: 'ПОБЕДА!', vWinner: 'Победитель', vSub: 'забирает все фишки за столом', vChips: 'фишек', vOutOnHand: 'выбыл на раздаче #{n}', vOut: 'выбыл', vLeft: 'покинул игру',
     vHands: 'Раздач сыграно: <b>{n}</b>', vBigPot: 'Самый большой банк: <b>{n}</b> — {name}', vBestHand: 'Лучшая комбинация: <b>{hand}</b> — {name}',
     vChart: 'Фишки по ходу игры', vTipHand: 'Раздача #{n}', vTipStart: 'Старт', vNewGame: 'Новая игра', vWaitHost: 'Ждём, пока хост начнёт новую игру…', 'l.newGame': 'Новая игра! Стек {stack}, блайнды {sb}/{bb}', 'e.notOver': 'Игра ещё не закончилась',
     combosTitle: 'Комбинации', combosSub: 'От самой сильной к самой слабой. Побеждает тот, у кого комбинация выше.', mineTag: '  ← у тебя сейчас',
@@ -3567,6 +3638,9 @@ const I18N = {
     'e.waitHandEnd': 'Wait for the hand to finish', 'e.alreadyRunning': 'The game is already running', 'e.need2': 'At least 2 players are needed', 'e.cantActNow': "You can't act right now",
     'e.notYourTurn': "It's not your turn", 'e.cantCheck': "You can't check — you need to call {n}", 'e.nothingToCall': 'There is no bet to call — you can check',
     'e.cantRaise': "You can't raise right now", 'e.badAmount': 'Invalid amount', 'e.betMoreThan': 'The bet must be more than {n}', 'e.minIs': 'Minimum {n}', 'e.unknownAction': 'Unknown action',
+    'l.discWait': '📴 {name} disconnected — waiting {n} s, then it counts as a loss', 'l.forfeit': '🚪 {name} did not return and is out of the game', 'l.forfeitWin': '🏆 {name} wins — everyone else left the game',
+    stLeft: 'Left', stDiscSec: '{n} s', 'e.youLeft': 'You left this game — you can only watch now',
+    leaveSure: 'Leave the game? It will count as a loss.', leftPenalty: 'loss counted for leaving the game: {d} (rating {r})',
     'l.rejoin': '{name} is back at the table', 'l.sits': '{name} sits down', 'l.sitsNext': '{name} sits down (plays from the next hand)',
     'l.left': '{name} left', 'l.disc': '{name} disconnected', 'l.rebuy': '{name} rebuys for {n}', 'l.away': '{name} is sitting out', 'l.back': '{name} is back in the game',
     'l.started': 'The game has started. Stack {stack}, blinds {sb}/{bb}', 'l.champion': '🏆 {name} wins all the chips!', 'l.waiting': 'Waiting for at least 2 players with chips…',
@@ -3740,7 +3814,7 @@ const I18N = {
     'ae.acc/name-short': 'The name needs at least 2 characters', 'ae.acc/name-taken': 'That name is already taken', 'ae.auth/email-already-in-use': 'This email is already registered',
     'ae.auth/invalid-email': 'Invalid email address', 'ae.auth/weak-password': 'The password needs at least 6 characters', 'ae.auth/invalid-credential': 'Wrong email or password',
     'ae.auth/too-many-requests': 'Too many attempts, try again later', 'ae.auth/network-request-failed': 'No connection to the server', 'ae.unknown': 'Something went wrong ({e})',
-    vYouWin: 'VICTORY!', vWinner: 'Winner', vSub: 'takes all the chips at the table', vChips: 'chips', vOutOnHand: 'out on hand #{n}', vOut: 'out',
+    vYouWin: 'VICTORY!', vWinner: 'Winner', vSub: 'takes all the chips at the table', vChips: 'chips', vOutOnHand: 'out on hand #{n}', vOut: 'out', vLeft: 'left the game',
     vHands: 'Hands played: <b>{n}</b>', vBigPot: 'Biggest pot: <b>{n}</b> — {name}', vBestHand: 'Best hand: <b>{hand}</b> — {name}',
     vChart: 'Chips over the game', vTipHand: 'Hand #{n}', vTipStart: 'Start', vNewGame: 'New game', vWaitHost: 'Waiting for the host to start a new game…', 'l.newGame': 'New game! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': "The game isn't over yet",
     combosTitle: 'Hand rankings', combosSub: 'From strongest to weakest. The higher hand wins.', mineTag: '  ← your hand now',
@@ -3793,6 +3867,9 @@ const I18N = {
     'e.waitHandEnd': 'Wacht tot de hand voorbij is', 'e.alreadyRunning': 'Het spel is al bezig', 'e.need2': 'Er zijn minstens 2 spelers nodig', 'e.cantActNow': 'Je kunt nu niets doen',
     'e.notYourTurn': 'Je bent niet aan de beurt', 'e.cantCheck': 'Checken kan niet — je moet {n} callen', 'e.nothingToCall': 'Er is geen inzet om te callen — je kunt checken',
     'e.cantRaise': 'Je kunt nu niet verhogen', 'e.badAmount': 'Ongeldig bedrag', 'e.betMoreThan': 'De inzet moet hoger zijn dan {n}', 'e.minIs': 'Minimaal {n}', 'e.unknownAction': 'Onbekende actie',
+    'l.discWait': '📴 {name} is verbroken — we wachten {n} s, anders telt het als verlies', 'l.forfeit': '🚪 {name} kwam niet terug en ligt uit het spel', 'l.forfeitWin': '🏆 {name} wint — de rest heeft het spel verlaten',
+    stLeft: 'Weg', stDiscSec: '{n} s', 'e.youLeft': 'Je hebt dit spel verlaten — je kunt nu alleen kijken',
+    leaveSure: 'Het spel verlaten? Dat telt als verlies.', leftPenalty: 'verlies geteld voor het verlaten van het spel: {d} (rating {r})',
     'l.rejoin': '{name} is terug aan tafel', 'l.sits': '{name} neemt plaats', 'l.sitsNext': '{name} neemt plaats (speelt mee vanaf de volgende hand)',
     'l.left': '{name} is vertrokken', 'l.disc': '{name} heeft de verbinding verbroken', 'l.rebuy': '{name} doet een rebuy van {n}', 'l.away': '{name} is even weg', 'l.back': '{name} speelt weer mee',
     'l.started': 'Het spel is begonnen. Stack {stack}, blinds {sb}/{bb}', 'l.champion': '🏆 {name} wint alle fiches!', 'l.waiting': 'Wachten op minstens 2 spelers met fiches…',
@@ -3966,7 +4043,7 @@ const I18N = {
     'ae.acc/name-short': 'De naam moet minstens 2 tekens hebben', 'ae.acc/name-taken': 'Deze naam is al bezet', 'ae.auth/email-already-in-use': 'Dit e-mailadres is al geregistreerd',
     'ae.auth/invalid-email': 'Ongeldig e-mailadres', 'ae.auth/weak-password': 'Het wachtwoord moet minstens 6 tekens hebben', 'ae.auth/invalid-credential': 'Verkeerd e-mailadres of wachtwoord',
     'ae.auth/too-many-requests': 'Te veel pogingen, probeer het later opnieuw', 'ae.auth/network-request-failed': 'Geen verbinding met de server', 'ae.unknown': 'Er ging iets mis ({e})',
-    vYouWin: 'GEWONNEN!', vWinner: 'Winnaar', vSub: 'pakt alle fiches aan tafel', vChips: 'fiches', vOutOnHand: 'uitgeschakeld in hand #{n}', vOut: 'uitgeschakeld',
+    vYouWin: 'GEWONNEN!', vWinner: 'Winnaar', vSub: 'pakt alle fiches aan tafel', vChips: 'fiches', vOutOnHand: 'uitgeschakeld in hand #{n}', vOut: 'uitgeschakeld', vLeft: 'heeft het spel verlaten',
     vHands: 'Gespeelde handen: <b>{n}</b>', vBigPot: 'Grootste pot: <b>{n}</b> — {name}', vBestHand: 'Beste hand: <b>{hand}</b> — {name}',
     vChart: 'Fiches tijdens het spel', vTipHand: 'Hand #{n}', vTipStart: 'Start', vNewGame: 'Nieuw spel', vWaitHost: 'Wachten tot de host een nieuw spel start…', 'l.newGame': 'Nieuw spel! Stack {stack}, blinds {sb}/{bb}', 'e.notOver': 'Het spel is nog niet afgelopen',
     combosTitle: 'Pokerhanden', combosSub: 'Van sterk naar zwak. De hoogste hand wint.', mineTag: '  ← jouw hand nu',
@@ -4220,6 +4297,7 @@ function hostHandle(pid, d) {
   switch (d.t) {
     case 'act': err = table.act(pid, d.a, d.amount); break;
     case 'chat': table.addChat(pid, d.text); hostRelayTyping(pid, false); break;
+    case 'leave': table.leave(pid); break;
     case 'typing': hostRelayTyping(pid, !!d.on); break;
     case 'voice': table.setVoice(pid, d.on, d.muted); break;
     case 'rebuy': err = table.rebuy(pid); break;
@@ -4346,7 +4424,7 @@ function clientJoin(name, code) {
       else if (d.t === 'avatars' && d.map && typeof d.map === 'object') { for (const k of Object.keys(d.map)) setAvatar(k, d.map[k]); if (view) render(view); }
       else if (d.t === 'avatar' && typeof d.name === 'string') { setAvatar(d.name, d.data); if (view) render(view); }
     });
-    conn.on('close', () => { if (welcomed) showOverlay(t('lostTitle'), t('lostText')); });
+    conn.on('close', () => setTimeout(() => { if (welcomed && !pageLeaving) { lossClear(); showOverlay(t('lostTitle'), t('lostText')); } }, 50));
   });
   peer.on('error', e => {
     if (welcomed) { console.warn('PeerJS:', e.type, e); return; }
@@ -4657,7 +4735,65 @@ function render(v) {
   if (v.phase === 'lobby' || v.phase === 'gameover') loadChamps(false);
   voiceSync(v);
   onlTouch();
+  lossTrack(v);
 }
+
+/* ---- отключение и выход из игры ---- */
+function discLabel(p) {
+  if (p.left) return '🚪 ' + t('stLeft');
+  if (p.ffLeft > 0) return '📴 ' + t('stDiscSec', { n: Math.ceil(p.ffLeft / 1000) });
+  return t('stDisc');
+}
+// живой отсчёт «📴 23 с» у отключившегося
+const ffAttr = p => !p.connected && !p.left && p.ffLeft > 0 ? ` data-ffend="${Date.now() + p.ffLeft}"` : '';
+setInterval(() => {
+  document.querySelectorAll('[data-ffend]').forEach(el => {
+    const n = Math.max(0, Math.ceil((+el.dataset.ffend - Date.now()) / 1000)), txt = '📴 ' + t('stDiscSec', { n });
+    if (el.textContent !== txt) el.textContent = txt;
+  });
+}, 250);
+/* Если ушёл из игры и не вернулся, хост не может записать тебе поражение (писать в профиль можешь только ты сам).
+   Поэтому, пока идёт рейтинговая игра, помним её; не вернулся за минуту — поражение списываем сами. */
+let pageLeaving = false;   // сами закрываем вкладку или выходим — это не «хост пропал»
+window.addEventListener('pagehide', () => { pageLeaving = true; }, true);
+window.addEventListener('beforeunload', () => { pageLeaving = true; }, true);
+const LOSS_KEY_BASE = 'poker_pending_loss_';
+const lossKey = () => LOSS_KEY_BASE + (myUid() || '');
+function lossTrack(v) {
+  if (!myUid() || !v || !v.gameId) return;
+  const me = v.players.find(p => p.id === myId);
+  if (['lobby', 'gameover'].includes(v.phase) || !me) { lossClear(v.gameId); return; }
+  if (!me.left) lossMark(v, false);
+}
+function lossMark(v, now) {
+  if (!myUid() || !v || !v.gameId) return;
+  const g = v.settings.game, team = g === 'wolf' || g === 'bunk';
+  const rec = { key: v.gameId, cat: rcat(g), game: g, n: v.players.length, team, at: now ? 0 : Date.now(), uid: myUid() };
+  lsSet(lossKey(), JSON.stringify(rec));
+}
+function lossClear(key) {
+  try { const r = JSON.parse(lsGet(lossKey()) || 'null'); if (r && r.uid === myUid() && (!key || r.key === key)) localStorage.removeItem(lossKey()); } catch (e) { }
+}
+async function lossApply() {
+  let r; try { r = JSON.parse(lsGet(lossKey()) || 'null'); } catch (e) { r = null; }
+  if (!r || !ACC.profile || !ACC.user || r.uid !== ACC.user.uid) return;
+  if (Date.now() - r.at < 60000) return;                       // может, ещё вернётся
+  if (view && view.gameId === r.key && view.phase !== 'gameover') return;
+  if (ratingWrittenKey === r.key) { lossClear(); return; }
+  localStorage.removeItem(lossKey());
+  ratingWrittenKey = r.key;
+  const n = Math.max(2, r.n || 2), pen = r.team ? TEAM_LOSS : placePenalty(n)[0] || [15, 25];
+  const d = -rollRange(pen), cat = r.cat === 'bj' ? 'bj' : 'poker', pr = ACC.profile;
+  const cur = (pr.ratings && pr.ratings[cat]) ?? RATING_START, games = ((pr.games && pr.games[cat]) || 0) + 1;
+  const upd = { ['ratings.' + cat]: cur + d, ['games.' + cat]: games, updated: Date.now() };
+  if (GAMES.includes(r.game)) upd['stats.' + r.game + '.games'] = firebase.firestore.FieldValue.increment(1);
+  try {
+    await ACC.db.collection('users').doc(ACC.user.uid).update(upd);
+    pr.ratings = { ...(pr.ratings || {}), [cat]: cur + d }; pr.games = { ...(pr.games || {}), [cat]: games };
+    updateAccountUI(); toast('🚪 ' + t('leftPenalty', { d: '−' + Math.abs(d), r: fmtR(cur + d) }));
+  } catch (e) { console.warn('leave penalty', e); }
+}
+setInterval(lossApply, 15000);
 
 /* ---- лобби ---- */
 function renderLobby(v) {
@@ -4971,10 +5107,10 @@ function renderWolfGame(v) {
     const targ = act && act.targets[p.name];
     if (targ) cls.push('wtarget');
     if (wSel === p.name) cls.push('wsel');
-    if (!p.connected) cls.push('out');
+    if (!p.connected || p.left) cls.push('out');
     let label = '', ac = 'empty';
     const vt = votes && votes[p.name];
-    if (!p.connected) { label = t('stDisc'); ac = 'info'; }
+    if (!p.connected || p.left) { label = discLabel(p); ac = 'info'; }
     else if (info.role && !info.alive) { label = '💀 ' + t('stDead'); ac = 'fold'; }
     else if (vt !== undefined && vt !== null) { label = vt ? t('stVoteFor', { name: vt }) : t('stAbstain'); ac = vt ? 'raise' : 'check'; }
     else if (v.phase === 'wday' && info.ready) { label = t('stReady'); ac = 'call'; }
@@ -4984,7 +5120,7 @@ function renderWolfGame(v) {
     const cnt = tally[p.name] ? `<div class="wcnt" style="${animStyle(anim('wv' + key + p.id + tally[p.name], 'pop', 300))}">${tally[p.name]}</div>` : '';
     const timer = pend.has(p.id) && v.settings.turnTime > 0 && v.phase !== 'wday' ? '<div class="tbar"><i class="tbarFill"></i></div>' : '';
     sh += `<div class="${cls.join(' ')}" data-pid="${esc(p.id)}" style="left:${pos.x}%;top:${pos.y}%;${animStyle(anim('seat-' + p.id, 'seatIn', 550, i * 70, 'cubic-bezier(.3,1.4,.5,1)'))}">
-      <div class="act ${ac}" style="${label ? animStyle(anim(`wl${key}-${p.id}-${label}`, 'pop', 350)) : ''}">${label ? esc(label) : '&nbsp;'}</div>
+      <div class="act ${ac}"${ffAttr(p)} style="${label ? animStyle(anim(`wl${key}-${p.id}-${ac}`, 'pop', 350)) : ''}">${label ? esc(label) : '&nbsp;'}</div>
       <div class="plate${p.uid && ACC.on ? ' haspro' : ''}"${targ ? ` data-wt="${esc(p.name)}"` : p.uid && ACC.on ? ` data-uid="${esc(p.uid)}"` : ''}>
         ${avaHTML(p.name, 'mini')}<div class="nm">${p.rating != null ? tierBadge(p.rating) : ''}${nameHTML(p.name, p.rating, p.uid)}${p.isHost ? ' ⭐' : ''}${vcIcon(p)}</div>
         ${roleB}${timer}${cnt}
@@ -5154,7 +5290,7 @@ function renderBunkGame(v) {
     else if (B.votes && B.votes[p.name] !== undefined) lbl = B.votes[p.name] ? '→ ' + esc(B.votes[p.name]) : t('stAbstain');
     else if (v.phase === 'btalk' && P.ready) lbl = t('stReady');
     else if (pend.has(p.id)) lbl = t('stThink');
-    if (!p.connected) lbl = t('stDisc');
+    if (!p.connected || p.left) lbl = `<span${ffAttr(p)}>${esc(discLabel(p))}</span>`;
     const badges = (P.imm ? `<span class="bk-b imm">${t('bImm')}</span>` : '') + (P.dbl && P.alive ? `<span class="bk-b dbl">${t('bDbl')}</span>` : '');
     const rows = BK_KEYS.map(k => {
       const c = P.cards[k], open = P.open.includes(k);
@@ -5421,14 +5557,14 @@ function renderGame(v) {
       hit: 'call', stand: 'check', bust: 'fold', bj: 'allin', ante: 'blind', pass: 'check', discard: 'info', play: 'call' })[p.last.a] || 'info' : 'empty';
     if (isPres && p.last && p.last.a === 'play') label = p.last.c.map(cardText).join(' ');
     if (isPres && p.finish != null && p.inHand) { label = t('pPlace', { n: p.finish + 1 }); ac = 'raise'; }
-    if (!p.connected) { label = t('stDisc'); ac = 'info'; }
+    if (!p.connected || p.left) { label = discLabel(p); ac = 'info'; }
     else if (p.sitOut) { label = t('stAway'); ac = 'info'; }
     else if (!p.inHand && v.phase !== 'waiting') { label = p.stack > 0 || isPres ? t('stWaitHand') : t('stNoChips'); ac = 'info'; }
     else if (p.inHand && p.folded) { label = t('aFold'); ac = 'fold'; }
     else if (p.id === v.toAct) { label = t('stThink'); ac = 'think'; }
     else if (pend.has(p.id)) { label = t(v.phase === 'discard' ? 'stDiscarding' : 'stTrading'); ac = 'think'; }
     if (!label) ac = 'empty';
-    const lblStyle = label ? animStyle(anim(`l${hand}-${p.id}-${label}`, ac === 'allin' ? 'shake' : 'pop', ac === 'allin' ? 750 : 350)) : '';
+    const lblStyle = label ? animStyle(anim(`l${hand}-${p.id}-${p.ffLeft > 0 ? 'ff' : label}`, ac === 'allin' ? 'shake' : 'pop', ac === 'allin' ? 750 : 350)) : '';
     const isMe = p.id === myId;
     const acting = p.id === v.toAct || pend.has(p.id);
     const timed = acting && v.settings.turnTime > 0;
@@ -5443,7 +5579,7 @@ function renderGame(v) {
     sh += `<div class="${cls.join(' ')}" data-pid="${esc(p.id)}" style="left:${pos.x}%;top:${pos.y}%;${animStyle(anim('seat-' + p.id, 'seatIn', 550, i * 70, 'cubic-bezier(.3,1.4,.5,1)'))}">
       <div class="hole n${Math.min(6, p.cardCount || 0)}">${hole}</div>
       ${ava}
-      <div class="act ${ac}" style="${lblStyle}">${label ? esc(label) : '&nbsp;'}</div>
+      <div class="act ${ac}"${ffAttr(p)} style="${lblStyle}">${label ? esc(label) : '&nbsp;'}</div>
       <div class="plate${p.uid && ACC.on ? ' haspro' : ''}"${p.uid && ACC.on ? ` data-uid="${esc(p.uid)}"` : ''} style="${plateStyle}">
         ${avaHTML(p.name, 'mini')}<div class="nm">${p.rating != null ? tierBadge(p.rating) : ''}${nameHTML(p.name, p.rating, p.uid)}${p.isHost ? ' ⭐' : ''}${vcIcon(p)}</div>
         ${isPres ? `${p.title ? `<div class="ptl t-${p.title}">${TITLE_ICON[p.title]} ${t('tt_' + p.title)}</div>` : ''}<div class="stk pts">${p.pts}<small> ${bjPoints(p.pts).replace(/^\d+\s*/, '')}</small></div>`
@@ -6130,7 +6266,7 @@ function renderVictory(v, me) {
   const isPresV = v.settings.game === 'pres';
   const rows = v.places.map((pl, i) => `<div class="vplace${i === 0 ? ' first' : ''}" style="animation-delay:${1.2 + i * 0.12}s">
       <div class="med">${medals[i] || (i + 1) + '.'}</div>${avaHTML(pl.name)}<div class="vn"><i class="sw" style="background:${seriesColor(v, pl.name)}"></i>${esc(pl.name)}</div>
-      <div class="r">${isPresV ? bjPoints(pl.pts) : pl.stack ? fmt(pl.stack) + ' ' + t('vChips') : (pl.hand ? t('vOutOnHand', { n: pl.hand }) : t('vOut'))}${ratingDeltaHTML(pl.name)}</div></div>`).join('');
+      <div class="r">${pl.left ? '🚪 ' + t('vLeft') : isPresV ? bjPoints(pl.pts) : pl.stack ? fmt(pl.stack) + ' ' + t('vChips') : (pl.hand ? t('vOutOnHand', { n: pl.hand }) : t('vOut'))}${ratingDeltaHTML(pl.name)}</div></div>`).join('');
   const st = v.stats || {};
   let stats = `<div>${t(isPresV ? 'vRounds' : 'vHands', { n: v.handNo })}</div>`;
   if (st.bigPot) stats += `<div>${t('vBigPot', { n: st.bigPot.n, name: esc(st.bigPot.name) })}</div>`;
@@ -6405,6 +6541,7 @@ function accInit() {
     ACC.user = u; ACC.profile = null;
     if (u) { try { await accLoadProfile(); } catch (e) { console.warn(e); } }
     updateAccountUI();
+    if (u) setTimeout(lossApply, 1500);
   });
   updateAccountUI();
 }
@@ -6663,7 +6800,7 @@ async function onRatings(msg) {
   if (!ACC.on || !ACC.user || !ACC.profile || ratingWrittenKey === msg.key) return;
   const me = msg.list.find(x => x.uid === ACC.user.uid);
   if (!me || !me.rated) return;
-  ratingWrittenKey = msg.key;
+  ratingWrittenKey = msg.key; lossClear(msg.key);
   const cat = msg.cat === 'bj' ? 'bj' : 'poker';
   const pr = ACC.profile;
   const games = ((pr.games && pr.games[cat]) || 0) + 1, wins = ((pr.wins && pr.wins[cat]) || 0) + (me.place === 0 ? 1 : 0);
@@ -7208,8 +7345,14 @@ $('#copyBtn').addEventListener('click', async () => {
 });
 $('#startBtn').addEventListener('click', () => send({ t: 'start' }));
 document.querySelectorAll('.leaveBtn').forEach(b => b.addEventListener('click', () => {
-  try { if (peer) peer.destroy(); } catch (e) {}
-  location.reload();
+  // выход из идущей игры = поражение (рейтинг спишется даже без связи с хостом)
+  const me = view && view.players.find(p => p.id === myId);
+  const active = view && me && !me.left && !['lobby', 'gameover'].includes(view.phase);
+  if (active && !confirm(t('leaveSure'))) return;
+  if (active && !isHost) { try { send({ t: 'leave' }); } catch (e) {} }
+  pageLeaving = true;
+  if (active) lossMark(view, true);
+  setTimeout(() => { try { if (peer) peer.destroy(); } catch (e) {} location.reload(); }, active && !isHost ? 300 : 0);
 }));
 $('#tabLog').addEventListener('click', () => setTab(false));
 $('#tabChat').addEventListener('click', () => setTab(true));
